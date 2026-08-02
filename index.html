@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compass AI &amp; Tech</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>Compass AI &amp; Tech
+      </h1>
+      <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
+    </header>
+    <canvas id="game" width="380" height="600"></canvas>
+    <div class="hud">
+      <span>Score: <strong id="score">0</strong></span>
+      <span>Best: <strong id="bestScore">0</strong></span>
+      <span>Balls: <strong id="ballsLeft">3</strong></span>
+    </div>
+    <div class="status">
+      <span>Coupon: <strong id="coupon">0</strong></span>
+      <span id="gameStateLabel">Ready to launch</span>
+    </div>
+    <div class="hint">Use ← → or A / D to flip</div>
+    <div class="controls">
+      <button id="launchBtn" class="launch-btn" type="button">Launch</button>
+      <button id="leaderboardBtn" class="leaderboard-btn" type="button">Leaderboard</button>
+    </div>
+  </div>
+
+  <div id="milestoneModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h2>Congratulations!</h2>
+      <p id="milestoneText">You reached 1500 points! Your prize: 15% discount coupon: PINBALL15</p>
+      <button id="milestoneClose" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="leaderboardModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h2>Leaderboard</h2>
+      <ol id="leaderboardList" class="leaderboard-list">
+        <li class="leaderboard-empty">Loading…</li>
+      </ol>
+      <button id="leaderboardClose" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="entryModal" class="modal show" aria-hidden="false">
+    <div class="modal-card">
+      <h2>Welcome</h2>
+      <p>Enter your details to start playing.</p>
+      <label class="entry-field">
+        <span>Name</span>
+        <input id="entryName" type="text" placeholder="Enter your name" autocomplete="name" />
+      </label>
+      <label class="entry-field">
+        <span>Email</span>
+        <input id="entryEmail" type="email" placeholder="Enter your email" autocomplete="email" />
+      </label>
+      <p class="entry-privacy">By continuing, you agree your email may be used to contact you about Compass AI &amp; Tech.</p>
+      <button id="entryStart" type="button" disabled>Start playing</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
