@@ -9,6 +9,9 @@ const launchBtn = document.getElementById('launchBtn');
 const milestoneModal = document.getElementById('milestoneModal');
 const milestoneText = document.getElementById('milestoneText');
 const milestoneClose = document.getElementById('milestoneClose');
+const gameOverModal = document.getElementById('gameOverModal');
+const gameOverText = document.getElementById('gameOverText');
+const gameOverClose = document.getElementById('gameOverClose');
 const entryModal = document.getElementById('entryModal');
 const entryName = document.getElementById('entryName');
 const entryEmail = document.getElementById('entryEmail');
@@ -167,6 +170,19 @@ if (state.milestoneIndex > milestones.indexOf(nextMilestone)) return;
 function closeMilestoneModal() {
   milestoneModal.classList.remove('show');
   milestoneModal.setAttribute('aria-hidden', 'true');
+  state.paused = false;
+}
+
+function showGameOverModal() {
+  gameOverText.textContent = `You lost all 3 balls. Final score: ${state.score}`;
+  gameOverModal.classList.add('show');
+  gameOverModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeGameOverModal() {
+  gameOverModal.classList.remove('show');
+  gameOverModal.setAttribute('aria-hidden', 'true');
+  resetGame();
   state.paused = false;
 }
 
@@ -344,13 +360,10 @@ function loseBall() {
   if (state.ballsLeft <= 0) {
     state.gameOver = true;
     state.ballsLeft = 0;
+    state.paused = true;
     updateHud();
     loadLeaderboard();
-    window.setTimeout(() => {
-      if (state.gameOver) {
-        resetGame();
-      }
-    }, 1200);
+    showGameOverModal();
     return;
   }
   resetBall();
@@ -673,6 +686,16 @@ milestoneClose.addEventListener('click', () => {
 milestoneModal.addEventListener('click', (event) => {
   if (event.target === milestoneModal) {
     closeMilestoneModal();
+  }
+});
+
+gameOverClose.addEventListener('click', () => {
+  closeGameOverModal();
+});
+
+gameOverModal.addEventListener('click', (event) => {
+  if (event.target === gameOverModal) {
+    closeGameOverModal();
   }
 });
 
