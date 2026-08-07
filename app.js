@@ -3,7 +3,6 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const bestScoreEl = document.getElementById('bestScore');
 const ballsLeftEl = document.getElementById('ballsLeft');
-const couponEl = document.getElementById('coupon');
 const gameStateLabel = document.getElementById('gameStateLabel');
 const launchBtn = document.getElementById('launchBtn');
 const milestoneModal = document.getElementById('milestoneModal');
@@ -74,7 +73,6 @@ const bumpers = [
 
 const state = {
   score: 0,
-  coupon: 0,
   bestScore: Number(localStorage.getItem('compassPinballBest') || 0),
   ballsLeft: 3,
   gameOver: false,
@@ -180,7 +178,6 @@ function updateHud() {
   scoreEl.textContent = state.score;
   bestScoreEl.textContent = state.bestScore;
   ballsLeftEl.textContent = state.ballsLeft;
-  couponEl.textContent = state.coupon;
   gameStateLabel.textContent = state.gameOver ? 'Game over' : (ball.launched ? 'In play' : 'Ready to launch');
   updateDiscountTiers();
 }
@@ -463,7 +460,6 @@ function resetBall() {
 
 function resetGame() {
   state.score = 0;
-  state.coupon = 0;
   state.ballsLeft = 3;
   state.gameOver = false;
   state.milestoneIndex = 0;
