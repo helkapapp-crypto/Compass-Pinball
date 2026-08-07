@@ -114,6 +114,15 @@ const flippers = {
   right: { x: FIELD_CENTER + 76, y: 520, length: 56, angle: 0.35, restingAngle: 0.35, activeAngle: -0.55, targetAngle: 0.35, angularVelocity: 0, contacting: false }
 };
 
+// Slingshot kickers sitting in the wedge between the tapered wall and each
+// flipper — hit harder than the plain walls, like a real pinball slingshot.
+const slingshotRestitution = 0.85;
+const slingshotKick = 130;
+const slingshots = [
+  { points: [[41, 430], [55, 500], [104, 465]], cooldown: 0 },
+  { points: [[2 * FIELD_CENTER - 41, 430], [2 * FIELD_CENTER - 55, 500], [2 * FIELD_CENTER - 104, 465]], cooldown: 0 }
+];
+
 const controls = {
   left: false,
   right: false
@@ -338,6 +347,42 @@ function updateBumpers(dt) {
   });
 }
 
+function updateSlingshots(dt) {
+  slingshots.forEach((sling) => {
+    sling.cooldown = Math.max(0, sling.cooldown - dt);
+  });
+}
+
+function collideWithSlingshot(sling) {
+  if (sling.cooldown > 0) return;
+  const [x1, y1] = sling.points[0];
+  const [x2, y2] = sling.points[2];
+  const segX = x2 - x1;
+  const segY = y2 - y1;
+  const toBallX = ball.x - x1;
+  const toBallY = ball.y - y1;
+  const lengthSq = segX * segX + segY * segY;
+  const t = Math.max(0, Math.min(1, (toBallX * segX + toBallY * segY) / Math.max(lengthSq, 0.0001)));
+  const closestX = x1 + segX * t;
+  const closestY = y1 + segY * t;
+  const dx = ball.x - closestX;
+  const dy = ball.y - closestY;
+  const dist = Math.hypot(dx, dy);
+  const hitRadius = ball.r + 5;
+
+  if (dist < hitRadius) {
+    const nx = dx / Math.max(dist, 0.0001);
+    const ny = dy / Math.max(dist, 0.0001);
+    const overlap = hitRadius - dist;
+    ball.x += nx * overlap;
+    ball.y += ny * overlap;
+    ball.vx += nx * slingshotKick * slingshotRestitution;
+    ball.vy += ny * slingshotKick * slingshotRestitution;
+    applyCollisionDamping();
+    sling.cooldown = 0.2;
+  }
+}
+
 function applyCollisionDamping(multiplier = collisionDamping) {
   ball.vx *= multiplier;
   ball.vy *= multiplier;
@@ -553,6 +598,8 @@ function updateBall(dt) {
 
     collideWithFlipper(flippers.left);
     collideWithFlipper(flippers.right);
+    collideWithSlingshot(slingshots[0]);
+    collideWithSlingshot(slingshots[1]);
 
     if (ball.y > DRAIN_Y) {
       loseBall();
@@ -590,6 +637,27 @@ function drawSlot(x, y, w, h) {
   ctx.beginPath();
   ctx.roundRect(x - w / 2, y - h / 2, w, h, w / 2);
   ctx.fill();
+}
+
+function drawSlingshots() {
+  slingshots.forEach((sling) => {
+    const [p1, p2, p3] = sling.points;
+    ctx.save();
+    const gradient = ctx.createLinearGradient(p1[0], p1[1], p3[0], p3[1]);
+    gradient.addColorStop(0, 'rgba(230,0,126,0.55)');
+    gradient.addColorStop(1, 'rgba(124,92,255,0.35)');
+    ctx.fillStyle = gradient;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.lineTo(p3[0], p3[1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
 }
 
 function drawPlungerLane() {
@@ -772,6 +840,7 @@ function drawBoard() {
   ctx.stroke();
   ctx.restore();
 
+  drawSlingshots();
   drawPlungerLane();
 }
 
@@ -782,16 +851,38 @@ function drawFlippers() {
     const tipY = flipper.y + Math.sin(flipper.angle) * flipper.length;
     const baseX = flipper.x - sign * Math.cos(flipper.angle) * FLIPPER_BACK_EXTENSION;
     const baseY = flipper.y - Math.sin(flipper.angle) * FLIPPER_BACK_EXTENSION;
+
+    // Filled, rounded capsule — wide at the pivot, tapering toward the tip —
+    // instead of a uniform-width stroked line.
+    const dx = tipX - baseX;
+    const dy = tipY - baseY;
+    const len = Math.hypot(dx, dy) || 1;
+    const px = -dy / len;
+    const py = dx / len;
+    const baseR = 9;
+    const tipR = 5;
+
     ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(baseX, baseY);
-    ctx.lineTo(tipX, tipY);
-    ctx.lineWidth = 12;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
     ctx.shadowBlur = 12;
     ctx.shadowColor = color;
-    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(baseX + px * baseR, baseY + py * baseR);
+    ctx.lineTo(tipX + px * tipR, tipY + py * tipR);
+    ctx.lineTo(tipX - px * tipR, tipY - py * tipR);
+    ctx.lineTo(baseX - px * baseR, baseY - py * baseR);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(baseX, baseY, baseR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, tipR, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   };
 
@@ -825,6 +916,7 @@ function animate(now) {
     updateLaunch(dt);
     updateFlippers(dt);
     updateBumpers(dt);
+    updateSlingshots(dt);
     updateBall(dt);
   }
   drawBoard();
