@@ -16,10 +16,8 @@ const entryModal = document.getElementById('entryModal');
 const entryName = document.getElementById('entryName');
 const entryEmail = document.getElementById('entryEmail');
 const entryStart = document.getElementById('entryStart');
-const leaderboardBtn = document.getElementById('leaderboardBtn');
-const leaderboardModal = document.getElementById('leaderboardModal');
 const leaderboardList = document.getElementById('leaderboardList');
-const leaderboardClose = document.getElementById('leaderboardClose');
+const discountTiers = document.getElementById('discountTiers');
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsL_UiAck_dnGvf0Tw_r5XczAJVqS7KqGWykPypifdIHg9Hf1gYbobZvu-07hgu5iC/exec';
 const REGISTER_URL = APPS_SCRIPT_URL;
@@ -143,6 +141,19 @@ function updateHud() {
   ballsLeftEl.textContent = state.ballsLeft;
   couponEl.textContent = state.coupon;
   gameStateLabel.textContent = state.gameOver ? 'Game over' : (ball.launched ? 'In play' : 'Ready to launch');
+  updateDiscountTiers();
+}
+
+function updateDiscountTiers() {
+  const items = discountTiers.querySelectorAll('li');
+  let nextAssigned = false;
+  items.forEach((item) => {
+    const threshold = Number(item.dataset.threshold);
+    const reached = state.score >= threshold;
+    item.classList.toggle('reached', reached);
+    item.classList.toggle('next', !reached && !nextAssigned);
+    if (!reached) nextAssigned = true;
+  });
 }
 
 function showMilestone(score) {
@@ -751,25 +762,9 @@ entryStart.addEventListener('click', () => {
   loadLeaderboard();
 });
 
-leaderboardBtn.addEventListener('click', () => {
-  leaderboardModal.classList.add('show');
-  leaderboardModal.setAttribute('aria-hidden', 'false');
-  loadLeaderboard();
-});
-
-leaderboardClose.addEventListener('click', () => {
-  leaderboardModal.classList.remove('show');
-  leaderboardModal.setAttribute('aria-hidden', 'true');
-});
-
-leaderboardModal.addEventListener('click', (event) => {
-  if (event.target === leaderboardModal) {
-    leaderboardModal.classList.remove('show');
-    leaderboardModal.setAttribute('aria-hidden', 'true');
-  }
-});
-
+updateDiscountTiers();
 loadLeaderboard();
+setInterval(loadLeaderboard, 20000);
 
 window.addEventListener('pointerup', () => {
   endLaunch();

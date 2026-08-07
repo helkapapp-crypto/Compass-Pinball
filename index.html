@@ -7,27 +7,92 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="shell">
-    <header>
-      <h1>Compass AI &amp; Tech
-      </h1>
-      <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
-    </header>
-    <canvas id="game" width="380" height="600"></canvas>
-    <div class="hud">
-      <span>Score: <strong id="score">0</strong></span>
-      <span>Best: <strong id="bestScore">0</strong></span>
-      <span>Balls: <strong id="ballsLeft">3</strong></span>
+  <div class="page">
+    <div class="shell">
+      <header>
+        <h1>Compass AI &amp; Tech
+        </h1>
+        <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
+      </header>
+      <canvas id="game" width="380" height="600"></canvas>
+      <div class="hud">
+        <span>Score: <strong id="score">0</strong></span>
+        <span>Best: <strong id="bestScore">0</strong></span>
+        <span>Balls: <strong id="ballsLeft">3</strong></span>
+      </div>
+      <div class="status">
+        <span>Coupon: <strong id="coupon">0</strong></span>
+        <span id="gameStateLabel">Ready to launch</span>
+      </div>
+      <div class="hint">Use ← → or A / D to flip</div>
+      <div class="controls">
+        <button id="launchBtn" class="launch-btn" type="button">Launch</button>
+      </div>
     </div>
-    <div class="status">
-      <span>Coupon: <strong id="coupon">0</strong></span>
-      <span id="gameStateLabel">Ready to launch</span>
-    </div>
-    <div class="hint">Use ← → or A / D to flip</div>
-    <div class="controls">
-      <button id="launchBtn" class="launch-btn" type="button">Launch</button>
-      <button id="leaderboardBtn" class="leaderboard-btn" type="button">Leaderboard</button>
-    </div>
+
+    <aside class="side-panel">
+      <section class="panel-block">
+        <h2>Tracks</h2>
+        <ul class="track-legend">
+          <li>
+            <span class="track-dot" style="background:#6545CC">AI</span>
+            <div class="track-info">
+              <strong>AI/ML</strong>
+              <p>Artificial intelligence &amp; machine learning in practice.</p>
+            </div>
+          </li>
+          <li>
+            <span class="track-dot" style="background:#159dd9">UX</span>
+            <div class="track-info">
+              <strong>UX/UI</strong>
+              <p>Product design, user research &amp; interface craft.</p>
+            </div>
+          </li>
+          <li>
+            <span class="track-dot" style="background:#e6007e">DA</span>
+            <div class="track-info">
+              <strong>Data</strong>
+              <p>Analytics, data engineering &amp; data-driven decisions.</p>
+            </div>
+          </li>
+          <li>
+            <span class="track-dot" style="background:#ffa414">PR</span>
+            <div class="track-info">
+              <strong>Product</strong>
+              <p>Product strategy, management &amp; growth.</p>
+            </div>
+          </li>
+          <li>
+            <span class="track-dot" style="background:#00a75d">LD</span>
+            <div class="track-info">
+              <strong>Leadership</strong>
+              <p>Leading teams &amp; scaling tech organizations.</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="panel-block">
+        <h2>Discount tiers</h2>
+        <ul id="discountTiers" class="discount-tiers">
+          <li data-threshold="1500"><span class="tier-points">1500 pts</span><span class="tier-discount">15% off</span></li>
+          <li data-threshold="2000"><span class="tier-points">2000 pts</span><span class="tier-discount">20% off</span></li>
+          <li data-threshold="2500"><span class="tier-points">2500 pts</span><span class="tier-discount">25% off</span></li>
+          <li data-threshold="3000"><span class="tier-points">3000 pts</span><span class="tier-discount">30% off</span></li>
+          <li data-threshold="3500"><span class="tier-points">3500 pts</span><span class="tier-discount">35% off</span></li>
+          <li data-threshold="4000"><span class="tier-points">4000 pts</span><span class="tier-discount">40% off</span></li>
+          <li data-threshold="4500"><span class="tier-points">4500 pts</span><span class="tier-discount">45% off</span></li>
+          <li data-threshold="5000"><span class="tier-points">5000 pts</span><span class="tier-discount">50% off</span></li>
+        </ul>
+      </section>
+
+      <section class="panel-block">
+        <h2>Leaderboard <span class="top10-badge">Top 10</span></h2>
+        <ol id="leaderboardList" class="leaderboard-list">
+          <li class="leaderboard-empty">Loading…</li>
+        </ol>
+      </section>
+    </aside>
   </div>
 
   <div id="milestoneModal" class="modal" aria-hidden="true">
@@ -43,16 +108,6 @@
       <h2>Game Over</h2>
       <p id="gameOverText">You lost all 3 balls. Final score: 0</p>
       <button id="gameOverClose" type="button">Play again</button>
-    </div>
-  </div>
-
-  <div id="leaderboardModal" class="modal" aria-hidden="true">
-    <div class="modal-card">
-      <h2>Leaderboard</h2>
-      <ol id="leaderboardList" class="leaderboard-list">
-        <li class="leaderboard-empty">Loading…</li>
-      </ol>
-      <button id="leaderboardClose" type="button">Close</button>
     </div>
   </div>
 
