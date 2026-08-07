@@ -881,6 +881,23 @@ window.addEventListener('pointerup', () => {
 });
 
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    if (milestoneModal.classList.contains('show')) {
+      event.preventDefault();
+      milestoneClose.click();
+      return;
+    }
+    if (gameOverModal.classList.contains('show')) {
+      event.preventDefault();
+      gameOverClose.click();
+      return;
+    }
+    if (entryModal.classList.contains('show')) {
+      event.preventDefault();
+      entryStart.click();
+      return;
+    }
+  }
   if (event.code === 'Space') {
     event.preventDefault();
     beginLaunch();
