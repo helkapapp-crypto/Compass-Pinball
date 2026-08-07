@@ -35,6 +35,18 @@ const FIELD_BOTTOM = 516;
 const FIELD_CENTER = (FIELD_LEFT + FIELD_RIGHT) / 2;
 const BORDER = { x: 18, y: 60, w: 304, h: 456, r: 24 };
 
+// Plunger lane: a narrow channel to the right of the main border where the
+// ball rests on the spring, gets launched upward, then merges into the
+// horseshoe arch near the top.
+const LANE_LEFT = FIELD_RIGHT + 16; // flush with the outer playfield border
+const LANE_RIGHT = LANE_LEFT + 30;
+const LANE_CENTER = (LANE_LEFT + LANE_RIGHT) / 2;
+const LANE_TOP = FIELD_TOP;
+const LANE_REST_Y = FIELD_BOTTOM - 20;
+const LANE_PULL_MAX = 22;
+const LANE_ANCHOR_Y = LANE_REST_Y + LANE_PULL_MAX + 40;
+const LANE_MERGE_HEIGHT = 60; // height of the rounded curve that merges the lane into the field
+
 // 2-over-3 bumper pentagon, matching the Compass blueprint layout — spread
 // wider than a tight cluster, but kept clear of the top arch rail (y=140)
 // above and the slingshots/flippers (y>=428) below.
@@ -57,13 +69,14 @@ const state = {
 };
 
 const ball = {
-  x: FIELD_CENTER,
-  y: 498,
+  x: LANE_CENTER,
+  y: LANE_REST_Y,
   r: 10,
   vx: 0,
   vy: 0,
   color: '#fefefe',
-  launched: false
+  launched: false,
+  inLane: true
 };
 
 const physics = {
@@ -121,7 +134,7 @@ function endLaunch() {
   if (!launchState.charging) return;
   launchState.charging = false;
   const power = Math.max(launchState.minCharge, launchState.charge / launchState.holdTime);
-  ball.vx = (Math.random() > 0.5 ? -70 : 70) * (0.75 + power * 0.25);
+  ball.vx = 0;
   ball.vy = -(420 + power * 220);
   ball.launched = true;
   setLaunchButtonLabel();
@@ -369,11 +382,12 @@ function collideWithFlipper(flipper) {
 }
 
 function resetBall() {
-  ball.x = FIELD_CENTER;
-  ball.y = 498;
+  ball.x = LANE_CENTER;
+  ball.y = LANE_REST_Y;
   ball.vx = 0;
   ball.vy = 0;
   ball.launched = false;
+  ball.inLane = true;
   launchState.charging = false;
   launchState.charge = 0;
   setLaunchButtonLabel();
@@ -406,8 +420,8 @@ function loseBall() {
 
 function updateBall(dt) {
   if (!ball.launched) {
-    ball.x = FIELD_CENTER;
-    ball.y = 498;
+    ball.x = LANE_CENTER;
+    ball.y = LANE_REST_Y + LANE_PULL_MAX * (launchState.charging ? launchState.charge : 0);
     ball.vx = 0;
     ball.vy = 0;
     return;
@@ -420,6 +434,39 @@ function updateBall(dt) {
     ball.vy += physics.gravity * step;
     ball.x += ball.vx * step;
     ball.y += ball.vy * step;
+
+    if (ball.inLane) {
+      const mergeStart = LANE_TOP + LANE_MERGE_HEIGHT;
+
+      if (ball.y <= mergeStart) {
+        // Rounded merge into the main field: ease the ball off the lane
+        // and onto the playfield instead of snapping its position.
+        const t = Math.min(1, (mergeStart - ball.y) / LANE_MERGE_HEIGHT);
+        const eased = t * t * (3 - 2 * t);
+        const mergeX = FIELD_RIGHT + 10 - ball.r;
+        ball.x = LANE_CENTER + (mergeX - LANE_CENTER) * eased;
+        if (ball.y <= LANE_TOP) {
+          ball.inLane = false;
+          ball.vx = -160;
+        }
+      } else {
+        const laneLeft = LANE_LEFT + ball.r;
+        const laneRight = LANE_RIGHT - ball.r;
+        if (ball.x < laneLeft) {
+          ball.x = laneLeft;
+          ball.vx = Math.abs(ball.vx) * wallRestitution;
+        } else if (ball.x > laneRight) {
+          ball.x = laneRight;
+          ball.vx = -Math.abs(ball.vx) * wallRestitution;
+        }
+
+        if (ball.y > LANE_ANCHOR_Y) {
+          loseBall();
+          return;
+        }
+      }
+      continue;
+    }
 
     const left = FIELD_LEFT + 10 + ball.r;
     const right = FIELD_RIGHT + 10 - ball.r;
@@ -504,6 +551,56 @@ function drawSlot(x, y, w, h) {
   ctx.beginPath();
   ctx.roundRect(x - w / 2, y - h / 2, w, h, w / 2);
   ctx.fill();
+}
+
+function drawPlungerLane() {
+  const plungerY = ball.launched ? LANE_REST_Y : ball.y;
+  const mergeStart = LANE_TOP + LANE_MERGE_HEIGHT;
+  const mergeX = FIELD_RIGHT + 10 - ball.r;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillRect(LANE_LEFT, mergeStart, LANE_RIGHT - LANE_LEFT, LANE_ANCHOR_Y - mergeStart);
+
+  ctx.strokeStyle = 'rgba(0,245,255,0.35)';
+  ctx.lineWidth = 3;
+
+  // Outer wall: straight down the full lane
+  ctx.beginPath();
+  ctx.moveTo(LANE_RIGHT, LANE_TOP);
+  ctx.lineTo(LANE_RIGHT, LANE_ANCHOR_Y);
+  ctx.stroke();
+
+  // Inner wall: straight, then a rounded curve merging into the playfield
+  ctx.beginPath();
+  ctx.moveTo(LANE_LEFT, LANE_ANCHOR_Y);
+  ctx.lineTo(LANE_LEFT, mergeStart);
+  ctx.quadraticCurveTo(LANE_LEFT, LANE_TOP, mergeX, LANE_TOP);
+  ctx.stroke();
+
+  // Spring coil from the fixed base up to the moving plunger head
+  const amplitude = (LANE_RIGHT - LANE_LEFT) / 2 - 5;
+  const segments = 8;
+  ctx.strokeStyle = 'rgba(0,245,255,0.7)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(LANE_CENTER, LANE_ANCHOR_Y);
+  for (let i = 1; i < segments; i += 1) {
+    const t = i / segments;
+    const y = LANE_ANCHOR_Y + (plungerY - LANE_ANCHOR_Y) * t;
+    const x = LANE_CENTER + (i % 2 === 0 ? amplitude : -amplitude);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(LANE_CENTER, plungerY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#00f5ff';
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#00f5ff';
+  ctx.beginPath();
+  ctx.roundRect(LANE_LEFT + 3, plungerY - 5, LANE_RIGHT - LANE_LEFT - 6, 10, 4);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawBoard() {
@@ -621,6 +718,8 @@ function drawBoard() {
   ctx.lineTo(2 * FIELD_CENTER - 50 + 4, 500);
   ctx.stroke();
   ctx.restore();
+
+  drawPlungerLane();
 }
 
 function drawFlippers() {
