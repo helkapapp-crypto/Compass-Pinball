@@ -32,7 +32,6 @@ const FIELD_RIGHT = 306;
 const FIELD_TOP = 76;
 const FIELD_BOTTOM = 516;
 const FIELD_CENTER = (FIELD_LEFT + FIELD_RIGHT) / 2;
-const BORDER = { x: 18, y: 60, w: 304, h: 456, r: 24 };
 
 // Below this height the side walls taper inward toward the flippers,
 // matching the drawn rail — the ball's bounds must follow the same funnel
@@ -111,15 +110,6 @@ const flippers = {
   left: { x: FIELD_CENTER - 76, y: 520, length: 56, angle: 0.35, restingAngle: 0.35, activeAngle: -0.55, targetAngle: 0.35, angularVelocity: 0, contacting: false },
   right: { x: FIELD_CENTER + 76, y: 520, length: 56, angle: 0.35, restingAngle: 0.35, activeAngle: -0.55, targetAngle: 0.35, angularVelocity: 0, contacting: false }
 };
-
-// Slingshot kickers sitting in the wedge between the tapered wall and each
-// flipper — hit harder than the plain walls, like a real pinball slingshot.
-const slingshotRestitution = 0.85;
-const slingshotKick = 130;
-const slingshots = [
-  { points: [[41, 430], [55, 500], [104, 465]], cooldown: 0 },
-  { points: [[2 * FIELD_CENTER - 41, 430], [2 * FIELD_CENTER - 55, 500], [2 * FIELD_CENTER - 104, 465]], cooldown: 0 }
-];
 
 const controls = {
   left: false,
@@ -344,42 +334,6 @@ function updateBumpers(dt) {
   });
 }
 
-function updateSlingshots(dt) {
-  slingshots.forEach((sling) => {
-    sling.cooldown = Math.max(0, sling.cooldown - dt);
-  });
-}
-
-function collideWithSlingshot(sling) {
-  if (sling.cooldown > 0) return;
-  const [x1, y1] = sling.points[0];
-  const [x2, y2] = sling.points[2];
-  const segX = x2 - x1;
-  const segY = y2 - y1;
-  const toBallX = ball.x - x1;
-  const toBallY = ball.y - y1;
-  const lengthSq = segX * segX + segY * segY;
-  const t = Math.max(0, Math.min(1, (toBallX * segX + toBallY * segY) / Math.max(lengthSq, 0.0001)));
-  const closestX = x1 + segX * t;
-  const closestY = y1 + segY * t;
-  const dx = ball.x - closestX;
-  const dy = ball.y - closestY;
-  const dist = Math.hypot(dx, dy);
-  const hitRadius = ball.r + 5;
-
-  if (dist < hitRadius) {
-    const nx = dx / Math.max(dist, 0.0001);
-    const ny = dy / Math.max(dist, 0.0001);
-    const overlap = hitRadius - dist;
-    ball.x += nx * overlap;
-    ball.y += ny * overlap;
-    ball.vx += nx * slingshotKick * slingshotRestitution;
-    ball.vy += ny * slingshotKick * slingshotRestitution;
-    applyCollisionDamping();
-    sling.cooldown = 0.2;
-  }
-}
-
 function applyCollisionDamping(multiplier = collisionDamping) {
   ball.vx *= multiplier;
   ball.vy *= multiplier;
@@ -594,8 +548,6 @@ function updateBall(dt) {
 
     collideWithFlipper(flippers.left);
     collideWithFlipper(flippers.right);
-    collideWithSlingshot(slingshots[0]);
-    collideWithSlingshot(slingshots[1]);
 
     if (ball.y > DRAIN_Y) {
       loseBall();
@@ -633,27 +585,6 @@ function drawSlot(x, y, w, h) {
   ctx.beginPath();
   ctx.roundRect(x - w / 2, y - h / 2, w, h, w / 2);
   ctx.fill();
-}
-
-function drawSlingshots() {
-  slingshots.forEach((sling) => {
-    const [p1, p2, p3] = sling.points;
-    ctx.save();
-    const gradient = ctx.createLinearGradient(p1[0], p1[1], p3[0], p3[1]);
-    gradient.addColorStop(0, 'rgba(230,0,126,0.55)');
-    gradient.addColorStop(1, 'rgba(124,92,255,0.35)');
-    ctx.fillStyle = gradient;
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(p1[0], p1[1]);
-    ctx.lineTo(p2[0], p2[1]);
-    ctx.lineTo(p3[0], p3[1]);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-  });
 }
 
 function drawPlungerLane() {
@@ -715,32 +646,17 @@ function drawBoard() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Outer playfield border — tapers inward toward the flippers instead of
-  // running out to a flat horizontal edge.
+  // Horseshoe rail — a single stroke with a soft glow, instead of three
+  // stacked lines running in parallel.
   ctx.save();
-  const borderGradient = ctx.createLinearGradient(BORDER.x, BORDER.y, BORDER.x, BORDER.y + BORDER.h);
-  borderGradient.addColorStop(0, 'rgba(0,245,255,0.55)');
-  borderGradient.addColorStop(1, 'rgba(124,92,255,0.55)');
-  ctx.strokeStyle = borderGradient;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(BORDER.x, 380);
-  ctx.lineTo(BORDER.x, BORDER.y + BORDER.r);
-  ctx.arcTo(BORDER.x, BORDER.y, BORDER.x + BORDER.r, BORDER.y, BORDER.r);
-  ctx.lineTo(BORDER.x + BORDER.w - BORDER.r, BORDER.y);
-  ctx.arcTo(BORDER.x + BORDER.w, BORDER.y, BORDER.x + BORDER.w, BORDER.y + BORDER.r, BORDER.r);
-  ctx.lineTo(BORDER.x + BORDER.w, 380);
-  ctx.lineTo(FIELD_CENTER + 118, BORDER.y + BORDER.h);
-  // No line back across the bottom — the middle stays open as the drain.
-  ctx.moveTo(BORDER.x, 380);
-  ctx.lineTo(FIELD_CENTER - 118, BORDER.y + BORDER.h);
-  ctx.stroke();
-  ctx.restore();
-
-  // Horseshoe arch rails (glow + inner rail) — same inward taper at the bottom.
-  ctx.save();
-  ctx.strokeStyle = 'rgba(0,245,255,0.35)';
-  ctx.lineWidth = 6;
+  const railGradient = ctx.createLinearGradient(0, 110, 0, 560);
+  railGradient.addColorStop(0, 'rgba(0,245,255,0.85)');
+  railGradient.addColorStop(1, 'rgba(124,92,255,0.85)');
+  ctx.strokeStyle = railGradient;
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = 'rgba(124,92,255,0.5)';
   ctx.beginPath();
   ctx.moveTo(FIELD_CENTER - 104, 560);
   ctx.lineTo(32, 380);
@@ -748,19 +664,6 @@ function drawBoard() {
   ctx.quadraticCurveTo(60, 95, 110, 110);
   ctx.quadraticCurveTo(FIELD_CENTER, 120, 230, 110);
   ctx.quadraticCurveTo(280, 95, 308, 150);
-  ctx.lineTo(308, 380);
-  ctx.lineTo(FIELD_CENTER + 104, 560);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.save();
-  ctx.strokeStyle = 'rgba(124,92,255,0.5)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(FIELD_CENTER - 104, 560);
-  ctx.lineTo(32, 380);
-  ctx.lineTo(32, 140);
-  ctx.lineTo(308, 140);
   ctx.lineTo(308, 380);
   ctx.lineTo(FIELD_CENTER + 104, 560);
   ctx.stroke();
@@ -815,14 +718,6 @@ function drawBoard() {
     ctx.restore();
   });
 
-  // Center drain kickout
-  ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,0.10)';
-  ctx.beginPath();
-  ctx.arc(FIELD_CENTER, 500, 34, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
   // Bottom outlane guides
   ctx.save();
   ctx.strokeStyle = 'rgba(124,92,255,0.4)';
@@ -836,7 +731,6 @@ function drawBoard() {
   ctx.stroke();
   ctx.restore();
 
-  drawSlingshots();
   drawPlungerLane();
 }
 
@@ -912,7 +806,6 @@ function animate(now) {
     updateLaunch(dt);
     updateFlippers(dt);
     updateBumpers(dt);
-    updateSlingshots(dt);
     updateBall(dt);
   }
   drawBoard();

@@ -163,6 +163,7 @@ body {
   padding: 7px 10px;
   border-radius: 10px;
   font-size: 0.85rem;
+  font-weight: 700;
   color: var(--muted);
   border: 1px solid transparent;
 }
