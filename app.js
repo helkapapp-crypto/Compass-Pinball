@@ -35,6 +35,14 @@ const FIELD_BOTTOM = 516;
 const FIELD_CENTER = (FIELD_LEFT + FIELD_RIGHT) / 2;
 const BORDER = { x: 18, y: 60, w: 304, h: 456, r: 24 };
 
+// Below this height the side walls taper inward toward the flippers,
+// matching the drawn rail — the ball's bounds must follow the same funnel
+// so it can't roll past the visible track.
+const TAPER_START_Y = 380;
+const TAPER_END_Y = FIELD_BOTTOM;
+const TAPER_LEFT_X = FIELD_CENTER - 68;
+const TAPER_RIGHT_X = FIELD_CENTER + 68;
+
 // Plunger lane: a narrow channel to the right of the main border where the
 // ball rests on the spring, gets launched upward, then merges into the
 // horseshoe arch near the top.
@@ -468,8 +476,13 @@ function updateBall(dt) {
       continue;
     }
 
-    const left = FIELD_LEFT + 10 + ball.r;
-    const right = FIELD_RIGHT + 10 - ball.r;
+    let left = FIELD_LEFT + 10 + ball.r;
+    let right = FIELD_RIGHT + 10 - ball.r;
+    if (ball.y > TAPER_START_Y) {
+      const taperT = Math.min(1, (ball.y - TAPER_START_Y) / (TAPER_END_Y - TAPER_START_Y));
+      left += (TAPER_LEFT_X + ball.r - left) * taperT;
+      right += (TAPER_RIGHT_X - ball.r - right) * taperT;
+    }
     const top = FIELD_TOP + ball.r;
     const bottom = FIELD_BOTTOM - ball.r;
 
@@ -612,7 +625,8 @@ function drawBoard() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Outer playfield border
+  // Outer playfield border — tapers inward toward the flippers instead of
+  // running out to a flat horizontal edge.
   ctx.save();
   const borderGradient = ctx.createLinearGradient(BORDER.x, BORDER.y, BORDER.x, BORDER.y + BORDER.h);
   borderGradient.addColorStop(0, 'rgba(0,245,255,0.55)');
@@ -620,21 +634,31 @@ function drawBoard() {
   ctx.strokeStyle = borderGradient;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(BORDER.x, BORDER.y, BORDER.w, BORDER.h, BORDER.r);
+  ctx.moveTo(BORDER.x, 380);
+  ctx.lineTo(BORDER.x, BORDER.y + BORDER.r);
+  ctx.arcTo(BORDER.x, BORDER.y, BORDER.x + BORDER.r, BORDER.y, BORDER.r);
+  ctx.lineTo(BORDER.x + BORDER.w - BORDER.r, BORDER.y);
+  ctx.arcTo(BORDER.x + BORDER.w, BORDER.y, BORDER.x + BORDER.w, BORDER.y + BORDER.r, BORDER.r);
+  ctx.lineTo(BORDER.x + BORDER.w, 380);
+  ctx.lineTo(FIELD_CENTER + 82, BORDER.y + BORDER.h);
+  ctx.lineTo(FIELD_CENTER - 82, BORDER.y + BORDER.h);
+  ctx.lineTo(BORDER.x, 380);
   ctx.stroke();
   ctx.restore();
 
-  // Horseshoe arch rails (glow + inner rail)
+  // Horseshoe arch rails (glow + inner rail) — same inward taper at the bottom.
   ctx.save();
   ctx.strokeStyle = 'rgba(0,245,255,0.35)';
   ctx.lineWidth = 6;
   ctx.beginPath();
-  ctx.moveTo(32, 520);
+  ctx.moveTo(FIELD_CENTER - 68, 520);
+  ctx.lineTo(32, 380);
   ctx.lineTo(32, 150);
   ctx.quadraticCurveTo(60, 95, 110, 110);
   ctx.quadraticCurveTo(FIELD_CENTER, 120, 230, 110);
   ctx.quadraticCurveTo(280, 95, 308, 150);
-  ctx.lineTo(308, 520);
+  ctx.lineTo(308, 380);
+  ctx.lineTo(FIELD_CENTER + 68, 520);
   ctx.stroke();
   ctx.restore();
 
@@ -642,10 +666,12 @@ function drawBoard() {
   ctx.strokeStyle = 'rgba(124,92,255,0.5)';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(32, 520);
+  ctx.moveTo(FIELD_CENTER - 68, 520);
+  ctx.lineTo(32, 380);
   ctx.lineTo(32, 140);
   ctx.lineTo(308, 140);
-  ctx.lineTo(308, 520);
+  ctx.lineTo(308, 380);
+  ctx.lineTo(FIELD_CENTER + 68, 520);
   ctx.stroke();
   ctx.restore();
 
@@ -746,12 +772,39 @@ function drawFlippers() {
 
 function drawBall() {
   ctx.save();
+
+  // Chrome-ball shading: a tight hotspot offset toward the light source,
+  // darkening through mid-grays to near-black at the rim.
+  const hlX = ball.x - ball.r * 0.35;
+  const hlY = ball.y - ball.r * 0.4;
+  const chrome = ctx.createRadialGradient(hlX, hlY, 0, ball.x, ball.y, ball.r * 1.05);
+  chrome.addColorStop(0, '#ffffff');
+  chrome.addColorStop(0.12, '#f2f2f4');
+  chrome.addColorStop(0.32, '#b6b6bc');
+  chrome.addColorStop(0.6, '#65656b');
+  chrome.addColorStop(0.85, '#28282c');
+  chrome.addColorStop(1, '#08080a');
+
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.fillStyle = ball.color;
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = '#ffffff';
+  ctx.fillStyle = chrome;
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = 'rgba(255,255,255,0.5)';
   ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Faint, blurred secondary highlight (reflected light) on the opposite side.
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.clip();
+  const rx = ball.x + ball.r * 0.4;
+  const ry = ball.y + ball.r * 0.45;
+  const reflection = ctx.createRadialGradient(rx, ry, 0, rx, ry, ball.r * 0.55);
+  reflection.addColorStop(0, 'rgba(255,255,255,0.35)');
+  reflection.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = reflection;
+  ctx.fillRect(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
+
   ctx.restore();
 }
 
