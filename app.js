@@ -506,15 +506,6 @@ function drawSlot(x, y, w, h) {
   ctx.fill();
 }
 
-function drawTriangle(points, close = true) {
-  ctx.beginPath();
-  ctx.moveTo(points[0][0], points[0][1]);
-  for (let i = 1; i < points.length; i += 1) {
-    ctx.lineTo(points[i][0], points[i][1]);
-  }
-  if (close) ctx.closePath();
-}
-
 function drawBoard() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -609,22 +600,6 @@ function drawBoard() {
     ctx.fillText(bumper.label, bumper.x, bumper.y);
     ctx.restore();
   });
-
-  // Slingshot triangles above the flippers
-  ctx.save();
-  const slingGradient = ctx.createLinearGradient(0, 428, 0, 505);
-  slingGradient.addColorStop(0, 'rgba(230,0,126,0.35)');
-  slingGradient.addColorStop(1, 'rgba(124,92,255,0.2)');
-  ctx.fillStyle = slingGradient;
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-  ctx.lineWidth = 2;
-  drawTriangle([[36, 470], [140, 428], [100, 500]]);
-  ctx.fill();
-  ctx.stroke();
-  drawTriangle([[2 * FIELD_CENTER - 36, 470], [2 * FIELD_CENTER - 140, 428], [2 * FIELD_CENTER - 100, 500]]);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
 
   // Center drain kickout
   ctx.save();
