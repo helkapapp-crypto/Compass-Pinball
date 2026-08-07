@@ -29,7 +29,7 @@ body {
 
 .page {
   width: 100%;
-  max-width: 1040px;
+  max-width: 1240px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -45,14 +45,35 @@ body {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 20px 70px rgba(0,0,0,0.45);
   border: 1px solid rgba(124,92,255,0.35);
   flex: 0 0 auto;
+  order: 1;
 }
 
 .side-panel {
-  width: min(94vw, 360px);
+  width: min(94vw, 320px);
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex: 0 0 auto;
+}
+
+.side-panel-left {
+  order: 2;
+}
+
+.side-panel-right {
+  order: 3;
+}
+
+@media (min-width: 900px) {
+  .side-panel-left {
+    margin-top: 75px;
+    order: 0;
+  }
+
+  .side-panel-right {
+    margin-top: 75px;
+    order: 2;
+  }
 }
 
 .panel-block {
@@ -166,7 +187,7 @@ body {
 }
 
 .side-panel .leaderboard-list {
-  max-height: 340px;
+  max-height: 560px;
 }
 
 header {

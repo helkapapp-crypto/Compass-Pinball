@@ -3,34 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Compass AI &amp; Tech</title>
+  <title>Compass AI &amp; Tech Summit
+  </title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="page">
-    <div class="shell">
-      <header>
-        <h1>Compass AI &amp; Tech
-        </h1>
-        <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
-      </header>
-      <canvas id="game" width="380" height="600"></canvas>
-      <div class="hud">
-        <span>Score: <strong id="score">0</strong></span>
-        <span>Best: <strong id="bestScore">0</strong></span>
-        <span>Balls: <strong id="ballsLeft">3</strong></span>
-      </div>
-      <div class="status">
-        <span>Coupon: <strong id="coupon">0</strong></span>
-        <span id="gameStateLabel">Ready to launch</span>
-      </div>
-      <div class="hint">Use ← → or A / D to flip</div>
-      <div class="controls">
-        <button id="launchBtn" class="launch-btn" type="button">Launch</button>
-      </div>
-    </div>
-
-    <aside class="side-panel">
+    <aside class="side-panel side-panel-left">
       <section class="panel-block">
         <h2>One Summit, Five Worlds</h2>
         <ul class="track-legend">
@@ -85,9 +64,33 @@
           <li data-threshold="5000"><span class="tier-points">5000 pts</span><span class="tier-discount">50% off</span></li>
         </ul>
       </section>
+    </aside>
 
+    <div class="shell">
+      <header>
+        <h1>Compass AI &amp; Tech
+        </h1>
+        <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
+      </header>
+      <canvas id="game" width="380" height="600"></canvas>
+      <div class="hud">
+        <span>Score: <strong id="score">0</strong></span>
+        <span>Best: <strong id="bestScore">0</strong></span>
+        <span>Balls: <strong id="ballsLeft">3</strong></span>
+      </div>
+      <div class="status">
+        <span>Coupon: <strong id="coupon">0</strong></span>
+        <span id="gameStateLabel">Ready to launch</span>
+      </div>
+      <div class="hint">Use ← → or A / D to flip</div>
+      <div class="controls">
+        <button id="launchBtn" class="launch-btn" type="button">Launch</button>
+      </div>
+    </div>
+
+    <aside class="side-panel side-panel-right">
       <section class="panel-block">
-        <h2>Leaderboard <span class="top10-badge">Top 10</span></h2>
+        <h2>Leaderboard <span class="top10-badge">Top 20</span></h2>
         <ol id="leaderboardList" class="leaderboard-list">
           <li class="leaderboard-empty">Loading…</li>
         </ol>

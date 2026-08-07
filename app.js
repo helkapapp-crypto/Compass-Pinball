@@ -267,11 +267,11 @@ function renderLeaderboard(entries) {
     leaderboardList.appendChild(li);
   };
 
-  const top10 = sorted.slice(0, 10);
-  top10.forEach((entry, index) => renderRow(entry, index + 1));
+  const top20 = sorted.slice(0, 20);
+  top20.forEach((entry, index) => renderRow(entry, index + 1));
 
   const playerRank = sorted.findIndex((entry) => entry.name === currentUsername);
-  if (currentUsername && playerRank >= 10) {
+  if (currentUsername && playerRank >= 20) {
     const divider = document.createElement('li');
     divider.className = 'leaderboard-divider';
     divider.textContent = '···';
