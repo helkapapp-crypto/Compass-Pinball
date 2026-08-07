@@ -1,0 +1,12 @@
+{
+  "name": "compass-ai-tech-pinball",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compass AI & Tech browser pinball game",
+  "scripts": {
+    "start": "live-server --port=8080 --open=/index.html"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

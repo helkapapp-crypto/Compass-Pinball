@@ -28,15 +28,20 @@ There is no build step or package manager involved — the game is plain HTML/CS
 
 Because the game is a static site, any local web server works. Opening `index.html` directly by double-clicking usually works too, but serving it avoids browser restrictions around `fetch` on the `file://` protocol.
 
-Using Python:
+With live reload (via [live-server](https://www.npmjs.com/package/live-server)), recommended for development:
+
+```bash
+npm install
+npm start
+```
+
+This opens `http://localhost:8080` and refreshes the page automatically whenever you edit `index.html`, `styles.css`, or `app.js`. If you use VS Code, the [Live Server extension](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) works the same way with no setup — right-click `index.html` and choose "Open with Live Server".
+
+Without Node, any static file server works too:
 
 ```bash
 python -m http.server 8080
-```
-
-Using Node (via `npx serve`):
-
-```bash
+# or
 npx serve .
 ```
 
