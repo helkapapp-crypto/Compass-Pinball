@@ -21,9 +21,9 @@ const leaderboardModal = document.getElementById('leaderboardModal');
 const leaderboardList = document.getElementById('leaderboardList');
 const leaderboardClose = document.getElementById('leaderboardClose');
 
-const REGISTER_URL = 'https://script.google.com/macros/s/AKfycbzHt_ycbUIO_vrvQeUrc2kvvhG-PU_6r208s8M1lfJXZmWFL9j76RnGzG4AD3sfc2QX/exec';
-// TODO: paste the GET endpoint that returns the leaderboard JSON here.
-const LEADERBOARD_URL = 'https://script.google.com/macros/s/AKfycbzHt_ycbUIO_vrvQeUrc2kvvhG-PU_6r208s8M1lfJXZmWFL9j76RnGzG4AD3sfc2QX/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/crafthub.events/s/AKfycbwsL_UiAck_dnGvf0Tw_r5XczAJVqS7KqGWykPypifdIHg9Hf1gYbobZvu-07hgu5iC/exec';
+const REGISTER_URL = APPS_SCRIPT_URL;
+const LEADERBOARD_URL = APPS_SCRIPT_URL;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let currentUsername = '';
@@ -198,17 +198,27 @@ function sendScoreUpdate() {
 
 function renderLeaderboard(entries) {
   const rows = Array.isArray(entries) ? entries : [];
-  const top10 = rows
-    .map((entry) => ({
-      name: String(entry.username || entry.name || 'Unknown'),
-      score: Number(entry.score) || 0
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
+  const players = rows.map((entry) => ({
+    name: String(entry.username || entry.name || 'Unknown'),
+    score: Number(entry.score) || 0
+  }));
+
+  // Show the current player right away, even before the backend has
+  // caught up with their registration or first score update.
+  if (currentUsername) {
+    const existing = players.find((entry) => entry.name === currentUsername);
+    if (existing) {
+      existing.score = Math.max(existing.score, state.score);
+    } else {
+      players.push({ name: currentUsername, score: state.score });
+    }
+  }
+
+  const sorted = players.sort((a, b) => b.score - a.score);
 
   leaderboardList.innerHTML = '';
 
-  if (top10.length === 0) {
+  if (sorted.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'leaderboard-empty';
     empty.textContent = 'No scores yet.';
@@ -216,20 +226,34 @@ function renderLeaderboard(entries) {
     return;
   }
 
-  top10.forEach((entry, index) => {
+  const renderRow = (entry, rank) => {
     const li = document.createElement('li');
-    const rank = document.createElement('span');
-    rank.className = 'rank';
-    rank.textContent = String(index + 1);
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = entry.name;
-    const score = document.createElement('span');
-    score.className = 'score';
-    score.textContent = String(entry.score);
-    li.append(rank, name, score);
+    const isYou = entry.name === currentUsername;
+    if (isYou) li.classList.add('you');
+    const rankEl = document.createElement('span');
+    rankEl.className = 'rank';
+    rankEl.textContent = String(rank);
+    const nameEl = document.createElement('span');
+    nameEl.className = 'name';
+    nameEl.textContent = isYou ? `${entry.name} (You)` : entry.name;
+    const scoreEl = document.createElement('span');
+    scoreEl.className = 'score';
+    scoreEl.textContent = String(entry.score);
+    li.append(rankEl, nameEl, scoreEl);
     leaderboardList.appendChild(li);
-  });
+  };
+
+  const top10 = sorted.slice(0, 10);
+  top10.forEach((entry, index) => renderRow(entry, index + 1));
+
+  const playerRank = sorted.findIndex((entry) => entry.name === currentUsername);
+  if (currentUsername && playerRank >= 10) {
+    const divider = document.createElement('li');
+    divider.className = 'leaderboard-divider';
+    divider.textContent = '···';
+    leaderboardList.appendChild(divider);
+    renderRow(sorted[playerRank], playerRank + 1);
+  }
 }
 
 function showLeaderboardMessage(message) {
@@ -724,6 +748,7 @@ entryStart.addEventListener('click', () => {
   entryModal.classList.remove('show');
   entryModal.setAttribute('aria-hidden', 'true');
   state.paused = false;
+  loadLeaderboard();
 });
 
 leaderboardBtn.addEventListener('click', () => {

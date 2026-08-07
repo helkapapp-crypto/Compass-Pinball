@@ -284,3 +284,21 @@ canvas {
   list-style: none;
   border-bottom: none !important;
 }
+
+.leaderboard-list li.you {
+  background: rgba(0, 245, 255, 0.1);
+  border-radius: 8px;
+}
+
+.leaderboard-list li.you .name {
+  color: #00f5ff;
+  font-weight: 700;
+}
+
+.leaderboard-divider {
+  text-align: center;
+  color: var(--muted);
+  padding: 4px 0 !important;
+  border-bottom: none !important;
+  letter-spacing: 0.3em;
+}
