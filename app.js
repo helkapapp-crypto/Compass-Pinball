@@ -24,6 +24,8 @@ const LEADERBOARD_URL = APPS_SCRIPT_URL;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let currentUsername = '';
+let currentEmail = '';
+let gameOverEmailSent = false;
 
 // Playfield layout: a horseshoe arch (like the reference blueprint).
 // FIELD_CENTER is the x-axis the flippers/bumpers mirror around.
@@ -235,6 +237,17 @@ function sendScoreUpdate() {
   }).catch(() => {});
 }
 
+function sendGameOverEmail() {
+  if (gameOverEmailSent) return;
+  gameOverEmailSent = true;
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'gameOver', username: currentUsername, email: currentEmail, score: state.score })
+  }).catch(() => {});
+}
+
 function renderLeaderboard(entries) {
   const rows = Array.isArray(entries) ? entries : [];
   const players = rows.map((entry) => ({
@@ -417,6 +430,7 @@ function resetGame() {
   state.ballsLeft = 3;
   state.gameOver = false;
   state.milestoneIndex = 0;
+  gameOverEmailSent = false;
   resetBall();
 }
 
@@ -430,6 +444,7 @@ function loseBall() {
     updateHud();
     loadLeaderboard();
     showGameOverModal();
+    sendGameOverEmail();
     return;
   }
   resetBall();
@@ -860,7 +875,8 @@ entryEmail.addEventListener('input', updateEntryValidity);
 entryStart.addEventListener('click', () => {
   if (entryStart.disabled) return;
   currentUsername = entryName.value.trim();
-  const email = entryEmail.value.trim();
+  currentEmail = entryEmail.value.trim();
+  const email = currentEmail;
   entryStart.disabled = true;
 
   fetch(REGISTER_URL, {
