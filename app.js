@@ -40,8 +40,13 @@ const BORDER = { x: 18, y: 60, w: 304, h: 456, r: 24 };
 // so it can't roll past the visible track.
 const TAPER_START_Y = 380;
 const TAPER_END_Y = FIELD_BOTTOM;
-const TAPER_LEFT_X = FIELD_CENTER - 68;
-const TAPER_RIGHT_X = FIELD_CENTER + 68;
+const TAPER_LEFT_X = FIELD_CENTER - 106;
+const TAPER_RIGHT_X = FIELD_CENTER + 106;
+
+// Below the flippers there is no floor — missing them (down the middle or
+// either outlane) drains the ball instead of bouncing it back into play.
+// Matches the flippers' own y so nothing rolls on past the drawn rail first.
+const DRAIN_Y = 520;
 
 // Plunger lane: a narrow channel to the right of the main border where the
 // ball rests on the spring, gets launched upward, then merges into the
@@ -89,7 +94,7 @@ const ball = {
 
 const physics = {
   gravity: 320,
-  substeps: 6
+  substeps: 12
 };
 
 // Collision response tuning: keep the ball bouncy without letting it gain energy.
@@ -98,9 +103,13 @@ const bumperRestitution = 0.72;
 const flipperRestitution = 0.72;
 const collisionDamping = 0.98;
 
+// How far each flipper's rod extends backward past its pivot, toward the
+// outer wall — closes the pocket where the ball used to wedge and get stuck.
+const FLIPPER_BACK_EXTENSION = 20;
+
 const flippers = {
-  left: { x: FIELD_CENTER - 58, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false },
-  right: { x: FIELD_CENTER + 58, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false }
+  left: { x: FIELD_CENTER - 82, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false },
+  right: { x: FIELD_CENTER + 82, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false }
 };
 
 const controls = {
@@ -336,19 +345,21 @@ function collideWithFlipper(flipper) {
   const sign = flipper.x < FIELD_CENTER ? 1 : -1;
   const tipX = flipper.x + sign * Math.cos(flipper.angle) * flipper.length;
   const tipY = flipper.y + Math.sin(flipper.angle) * flipper.length;
-  const segmentX = tipX - flipper.x;
-  const segmentY = tipY - flipper.y;
-  const toBallX = ball.x - flipper.x;
-  const toBallY = ball.y - flipper.y;
+  const baseX = flipper.x - sign * Math.cos(flipper.angle) * FLIPPER_BACK_EXTENSION;
+  const baseY = flipper.y - Math.sin(flipper.angle) * FLIPPER_BACK_EXTENSION;
+  const segmentX = tipX - baseX;
+  const segmentY = tipY - baseY;
+  const toBallX = ball.x - baseX;
+  const toBallY = ball.y - baseY;
   const lengthSq = segmentX * segmentX + segmentY * segmentY;
   const projection = (toBallX * segmentX + toBallY * segmentY) / Math.max(lengthSq, 0.0001);
   const t = Math.max(0, Math.min(1, projection));
-  const closestX = flipper.x + segmentX * t;
-  const closestY = flipper.y + segmentY * t;
+  const closestX = baseX + segmentX * t;
+  const closestY = baseY + segmentY * t;
   const dx = ball.x - closestX;
   const dy = ball.y - closestY;
   const dist = Math.hypot(dx, dy);
-  const hitRadius = ball.r + 4;
+  const hitRadius = ball.r + 7;
 
   if (dist < hitRadius) {
     const nx = dx / Math.max(dist, 0.0001);
@@ -357,9 +368,10 @@ function collideWithFlipper(flipper) {
     ball.x += nx * overlap;
     ball.y += ny * overlap;
 
-    const pointY = t * segmentY;
-   const segVelX = -sign * flipper.angularVelocity * pointY;
-   const segVelY = sign * flipper.angularVelocity * t * segmentX;
+    const pointX = closestX - flipper.x;
+    const pointY = closestY - flipper.y;
+    const segVelX = -sign * flipper.angularVelocity * pointY;
+    const segVelY = sign * flipper.angularVelocity * pointX;
     const relVx = ball.vx - segVelX;
     const relVy = ball.vy - segVelY;
     const normalSpeed = relVx * nx + relVy * ny;
@@ -455,7 +467,7 @@ function updateBall(dt) {
         ball.x = LANE_CENTER + (mergeX - LANE_CENTER) * eased;
         if (ball.y <= LANE_TOP) {
           ball.inLane = false;
-          ball.vx = -160;
+          ball.vx = -70;
         }
       } else {
         const laneLeft = LANE_LEFT + ball.r;
@@ -484,7 +496,6 @@ function updateBall(dt) {
       right += (TAPER_RIGHT_X - ball.r - right) * taperT;
     }
     const top = FIELD_TOP + ball.r;
-    const bottom = FIELD_BOTTOM - ball.r;
 
     bumpers.forEach((bumper) => {
       const dx = ball.x - bumper.x;
@@ -520,14 +531,9 @@ function updateBall(dt) {
       ball.y = top;
       ball.vy = Math.abs(ball.vy) * wallRestitution;
       applyCollisionDamping();
-    } else if (ball.y > bottom) {
-      ball.y = bottom;
-      ball.vy = -Math.abs(ball.vy) * wallRestitution;
-      applyCollisionDamping();
-      if (ball.vy > 0) {
-        loseBall();
-        return;
-      }
+    } else if (ball.y > DRAIN_Y) {
+      loseBall();
+      return;
     }
 
     collideWithFlipper(flippers.left);
@@ -640,9 +646,10 @@ function drawBoard() {
   ctx.lineTo(BORDER.x + BORDER.w - BORDER.r, BORDER.y);
   ctx.arcTo(BORDER.x + BORDER.w, BORDER.y, BORDER.x + BORDER.w, BORDER.y + BORDER.r, BORDER.r);
   ctx.lineTo(BORDER.x + BORDER.w, 380);
-  ctx.lineTo(FIELD_CENTER + 82, BORDER.y + BORDER.h);
-  ctx.lineTo(FIELD_CENTER - 82, BORDER.y + BORDER.h);
-  ctx.lineTo(BORDER.x, 380);
+  ctx.lineTo(FIELD_CENTER + 120, BORDER.y + BORDER.h);
+  // No line back across the bottom — the middle stays open as the drain.
+  ctx.moveTo(BORDER.x, 380);
+  ctx.lineTo(FIELD_CENTER - 120, BORDER.y + BORDER.h);
   ctx.stroke();
   ctx.restore();
 
@@ -651,14 +658,14 @@ function drawBoard() {
   ctx.strokeStyle = 'rgba(0,245,255,0.35)';
   ctx.lineWidth = 6;
   ctx.beginPath();
-  ctx.moveTo(FIELD_CENTER - 68, 520);
+  ctx.moveTo(FIELD_CENTER - 106, 520);
   ctx.lineTo(32, 380);
   ctx.lineTo(32, 150);
   ctx.quadraticCurveTo(60, 95, 110, 110);
   ctx.quadraticCurveTo(FIELD_CENTER, 120, 230, 110);
   ctx.quadraticCurveTo(280, 95, 308, 150);
   ctx.lineTo(308, 380);
-  ctx.lineTo(FIELD_CENTER + 68, 520);
+  ctx.lineTo(FIELD_CENTER + 106, 520);
   ctx.stroke();
   ctx.restore();
 
@@ -666,12 +673,12 @@ function drawBoard() {
   ctx.strokeStyle = 'rgba(124,92,255,0.5)';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(FIELD_CENTER - 68, 520);
+  ctx.moveTo(FIELD_CENTER - 106, 520);
   ctx.lineTo(32, 380);
   ctx.lineTo(32, 140);
   ctx.lineTo(308, 140);
   ctx.lineTo(308, 380);
-  ctx.lineTo(FIELD_CENTER + 68, 520);
+  ctx.lineTo(FIELD_CENTER + 106, 520);
   ctx.stroke();
   ctx.restore();
 
@@ -772,39 +779,12 @@ function drawFlippers() {
 
 function drawBall() {
   ctx.save();
-
-  // Chrome-ball shading: a tight hotspot offset toward the light source,
-  // darkening through mid-grays to near-black at the rim.
-  const hlX = ball.x - ball.r * 0.35;
-  const hlY = ball.y - ball.r * 0.4;
-  const chrome = ctx.createRadialGradient(hlX, hlY, 0, ball.x, ball.y, ball.r * 1.05);
-  chrome.addColorStop(0, '#ffffff');
-  chrome.addColorStop(0.12, '#f2f2f4');
-  chrome.addColorStop(0.32, '#b6b6bc');
-  chrome.addColorStop(0.6, '#65656b');
-  chrome.addColorStop(0.85, '#28282c');
-  chrome.addColorStop(1, '#08080a');
-
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.fillStyle = chrome;
-  ctx.shadowBlur = 14;
-  ctx.shadowColor = 'rgba(255,255,255,0.5)';
+  ctx.fillStyle = ball.color;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = '#ffffff';
   ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Faint, blurred secondary highlight (reflected light) on the opposite side.
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.clip();
-  const rx = ball.x + ball.r * 0.4;
-  const ry = ball.y + ball.r * 0.45;
-  const reflection = ctx.createRadialGradient(rx, ry, 0, rx, ry, ball.r * 0.55);
-  reflection.addColorStop(0, 'rgba(255,255,255,0.35)');
-  reflection.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = reflection;
-  ctx.fillRect(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
-
   ctx.restore();
 }
 
