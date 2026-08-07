@@ -63,11 +63,11 @@ const LANE_MERGE_HEIGHT = 60; // height of the rounded curve that merges the lan
 // wider than a tight cluster, but kept clear of the top arch rail (y=140)
 // above and the slingshots/flippers (y>=428) below.
 const bumpers = [
-  { x: FIELD_CENTER - 76, y: 170, r: 24, color: '#6545CC', label: 'AI', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER + 76, y: 170, r: 24, color: '#ffa414', label: 'PR', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER - 100, y: 270, r: 24, color: '#159dd9', label: 'UX', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER, y: 270, r: 24, color: '#e6007e', label: 'DA', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER + 100, y: 270, r: 24, color: '#00a75d', label: 'LD', cooldown: 0, cooldownTime: 0.2 }
+  { x: FIELD_CENTER - 62, y: 170, r: 24, color: '#6545CC', label: 'AI', cooldown: 0, cooldownTime: 0.2 },
+  { x: FIELD_CENTER + 62, y: 170, r: 24, color: '#ffa414', label: 'PR', cooldown: 0, cooldownTime: 0.2 },
+  { x: FIELD_CENTER - 62, y: 270, r: 24, color: '#159dd9', label: 'UX', cooldown: 0, cooldownTime: 0.2 },
+  { x: FIELD_CENTER, y: 220, r: 24, color: '#e6007e', label: 'DA', cooldown: 0, cooldownTime: 0.2 },
+  { x: FIELD_CENTER + 62, y: 270, r: 24, color: '#00a75d', label: 'LD', cooldown: 0, cooldownTime: 0.2 }
 ];
 
 const state = {
@@ -612,28 +612,32 @@ function drawPlungerLane() {
   ctx.quadraticCurveTo(LANE_LEFT, LANE_TOP, mergeX, LANE_TOP);
   ctx.stroke();
 
-  // Spring coil from the fixed base up to the moving plunger head
-  const amplitude = (LANE_RIGHT - LANE_LEFT) / 2 - 5;
-  const segments = 8;
-  ctx.strokeStyle = 'rgba(0,245,255,0.7)';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(LANE_CENTER, LANE_ANCHOR_Y);
-  for (let i = 1; i < segments; i += 1) {
-    const t = i / segments;
-    const y = LANE_ANCHOR_Y + (plungerY - LANE_ANCHOR_Y) * t;
-    const x = LANE_CENTER + (i % 2 === 0 ? amplitude : -amplitude);
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(LANE_CENTER, plungerY);
-  ctx.stroke();
+  // Spring coil + plunger head — only while the ball is actually resting on
+  // it. Once launched, the plunger has already snapped back and showing it
+  // detached below the ascending ball just looks broken.
+  if (!ball.launched) {
+    const amplitude = (LANE_RIGHT - LANE_LEFT) / 2 - 5;
+    const segments = 8;
+    ctx.strokeStyle = 'rgba(0,245,255,0.7)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(LANE_CENTER, LANE_ANCHOR_Y);
+    for (let i = 1; i < segments; i += 1) {
+      const t = i / segments;
+      const y = LANE_ANCHOR_Y + (plungerY - LANE_ANCHOR_Y) * t;
+      const x = LANE_CENTER + (i % 2 === 0 ? amplitude : -amplitude);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(LANE_CENTER, plungerY);
+    ctx.stroke();
 
-  ctx.fillStyle = '#00f5ff';
-  ctx.shadowBlur = 10;
-  ctx.shadowColor = '#00f5ff';
-  ctx.beginPath();
-  ctx.roundRect(LANE_LEFT + 3, plungerY - 5, LANE_RIGHT - LANE_LEFT - 6, 10, 4);
-  ctx.fill();
+    ctx.fillStyle = '#00f5ff';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00f5ff';
+    ctx.beginPath();
+    ctx.roundRect(LANE_LEFT + 3, plungerY - 5, LANE_RIGHT - LANE_LEFT - 6, 10, 4);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
