@@ -40,13 +40,14 @@ const BORDER = { x: 18, y: 60, w: 304, h: 456, r: 24 };
 // so it can't roll past the visible track.
 const TAPER_START_Y = 380;
 const TAPER_END_Y = FIELD_BOTTOM;
-const TAPER_LEFT_X = FIELD_CENTER - 106;
-const TAPER_RIGHT_X = FIELD_CENTER + 106;
+const TAPER_LEFT_X = FIELD_CENTER - 104;
+const TAPER_RIGHT_X = FIELD_CENTER + 104;
 
 // Below the flippers there is no floor — missing them (down the middle or
 // either outlane) drains the ball instead of bouncing it back into play.
-// Matches the flippers' own y so nothing rolls on past the drawn rail first.
-const DRAIN_Y = 520;
+// Set past the flippers' resting droop + hit radius so an idle flipper still
+// gets a real chance to make contact before the ball is ruled "missed".
+const DRAIN_Y = 560;
 
 // Plunger lane: a narrow channel to the right of the main border where the
 // ball rests on the spring, gets launched upward, then merges into the
@@ -98,18 +99,19 @@ const physics = {
 };
 
 // Collision response tuning: keep the ball bouncy without letting it gain energy.
-const wallRestitution = 0.7;
-const bumperRestitution = 0.72;
-const flipperRestitution = 0.72;
-const collisionDamping = 0.98;
+const wallRestitution = 0.62;
+const bumperRestitution = 0.64;
+const flipperRestitution = 0.66;
+const collisionDamping = 0.965;
 
 // How far each flipper's rod extends backward past its pivot, toward the
 // outer wall — closes the pocket where the ball used to wedge and get stuck.
-const FLIPPER_BACK_EXTENSION = 20;
+// Kept short so it doesn't itself reach into the outlane wall and pinch the ball.
+const FLIPPER_BACK_EXTENSION = 12;
 
 const flippers = {
-  left: { x: FIELD_CENTER - 82, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false },
-  right: { x: FIELD_CENTER + 82, y: 520, length: 56, angle: 0.55, restingAngle: 0.55, activeAngle: -0.55, targetAngle: 0.55, angularVelocity: 0, contacting: false }
+  left: { x: FIELD_CENTER - 76, y: 520, length: 56, angle: 0.35, restingAngle: 0.35, activeAngle: -0.55, targetAngle: 0.35, angularVelocity: 0, contacting: false },
+  right: { x: FIELD_CENTER + 76, y: 520, length: 56, angle: 0.35, restingAngle: 0.35, activeAngle: -0.55, targetAngle: 0.35, angularVelocity: 0, contacting: false }
 };
 
 const controls = {
@@ -490,10 +492,21 @@ function updateBall(dt) {
 
     let left = FIELD_LEFT + 10 + ball.r;
     let right = FIELD_RIGHT + 10 - ball.r;
+    let leftNX = 1, leftNY = 0;
+    let rightNX = -1, rightNY = 0;
     if (ball.y > TAPER_START_Y) {
       const taperT = Math.min(1, (ball.y - TAPER_START_Y) / (TAPER_END_Y - TAPER_START_Y));
-      left += (TAPER_LEFT_X + ball.r - left) * taperT;
-      right += (TAPER_RIGHT_X - ball.r - right) * taperT;
+      const taperDy = TAPER_END_Y - TAPER_START_Y;
+      const leftTaperDx = (TAPER_LEFT_X + ball.r) - left;
+      const rightTaperDx = (TAPER_RIGHT_X - ball.r) - right;
+      const leftLen = Math.hypot(leftTaperDx, taperDy);
+      const rightLen = Math.hypot(rightTaperDx, taperDy);
+      leftNX = taperDy / leftLen;
+      leftNY = -leftTaperDx / leftLen;
+      rightNX = -taperDy / rightLen;
+      rightNY = rightTaperDx / rightLen;
+      left += leftTaperDx * taperT;
+      right += rightTaperDx * taperT;
     }
     const top = FIELD_TOP + ball.r;
 
@@ -519,25 +532,32 @@ function updateBall(dt) {
 
     if (ball.x < left) {
       ball.x = left;
-      ball.vx = Math.abs(ball.vx) * wallRestitution;
-      applyCollisionDamping();
+      const vDotN = ball.vx * leftNX + ball.vy * leftNY;
+      if (vDotN < 0) {
+        ball.vx -= (1 + wallRestitution) * vDotN * leftNX;
+        ball.vy -= (1 + wallRestitution) * vDotN * leftNY;
+      }
     } else if (ball.x > right) {
       ball.x = right;
-      ball.vx = -Math.abs(ball.vx) * wallRestitution;
-      applyCollisionDamping();
+      const vDotN = ball.vx * rightNX + ball.vy * rightNY;
+      if (vDotN < 0) {
+        ball.vx -= (1 + wallRestitution) * vDotN * rightNX;
+        ball.vy -= (1 + wallRestitution) * vDotN * rightNY;
+      }
     }
 
     if (ball.y < top) {
       ball.y = top;
       ball.vy = Math.abs(ball.vy) * wallRestitution;
-      applyCollisionDamping();
-    } else if (ball.y > DRAIN_Y) {
-      loseBall();
-      return;
     }
 
     collideWithFlipper(flippers.left);
     collideWithFlipper(flippers.right);
+
+    if (ball.y > DRAIN_Y) {
+      loseBall();
+      return;
+    }
   }
 
   const moved = Math.hypot(ball.x - prevX, ball.y - prevY);
@@ -554,7 +574,7 @@ function updateBall(dt) {
 }
 
 function updateFlippers(dt) {
-  const speed = 36;
+  const speed = 22;
   const updateOne = (flipper, pressed, targetAngle) => {
     const prevAngle = flipper.angle;
     flipper.targetAngle = pressed ? targetAngle : flipper.restingAngle;
@@ -646,10 +666,10 @@ function drawBoard() {
   ctx.lineTo(BORDER.x + BORDER.w - BORDER.r, BORDER.y);
   ctx.arcTo(BORDER.x + BORDER.w, BORDER.y, BORDER.x + BORDER.w, BORDER.y + BORDER.r, BORDER.r);
   ctx.lineTo(BORDER.x + BORDER.w, 380);
-  ctx.lineTo(FIELD_CENTER + 120, BORDER.y + BORDER.h);
+  ctx.lineTo(FIELD_CENTER + 118, BORDER.y + BORDER.h);
   // No line back across the bottom — the middle stays open as the drain.
   ctx.moveTo(BORDER.x, 380);
-  ctx.lineTo(FIELD_CENTER - 120, BORDER.y + BORDER.h);
+  ctx.lineTo(FIELD_CENTER - 118, BORDER.y + BORDER.h);
   ctx.stroke();
   ctx.restore();
 
@@ -658,14 +678,14 @@ function drawBoard() {
   ctx.strokeStyle = 'rgba(0,245,255,0.35)';
   ctx.lineWidth = 6;
   ctx.beginPath();
-  ctx.moveTo(FIELD_CENTER - 106, 520);
+  ctx.moveTo(FIELD_CENTER - 104, 560);
   ctx.lineTo(32, 380);
   ctx.lineTo(32, 150);
   ctx.quadraticCurveTo(60, 95, 110, 110);
   ctx.quadraticCurveTo(FIELD_CENTER, 120, 230, 110);
   ctx.quadraticCurveTo(280, 95, 308, 150);
   ctx.lineTo(308, 380);
-  ctx.lineTo(FIELD_CENTER + 106, 520);
+  ctx.lineTo(FIELD_CENTER + 104, 560);
   ctx.stroke();
   ctx.restore();
 
@@ -673,12 +693,12 @@ function drawBoard() {
   ctx.strokeStyle = 'rgba(124,92,255,0.5)';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(FIELD_CENTER - 106, 520);
+  ctx.moveTo(FIELD_CENTER - 104, 560);
   ctx.lineTo(32, 380);
   ctx.lineTo(32, 140);
   ctx.lineTo(308, 140);
   ctx.lineTo(308, 380);
-  ctx.lineTo(FIELD_CENTER + 106, 520);
+  ctx.lineTo(FIELD_CENTER + 104, 560);
   ctx.stroke();
   ctx.restore();
 
@@ -760,9 +780,11 @@ function drawFlippers() {
     const sign = flipper.x < FIELD_CENTER ? 1 : -1;
     const tipX = flipper.x + sign * Math.cos(flipper.angle) * flipper.length;
     const tipY = flipper.y + Math.sin(flipper.angle) * flipper.length;
+    const baseX = flipper.x - sign * Math.cos(flipper.angle) * FLIPPER_BACK_EXTENSION;
+    const baseY = flipper.y - Math.sin(flipper.angle) * FLIPPER_BACK_EXTENSION;
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(flipper.x, flipper.y);
+    ctx.moveTo(baseX, baseY);
     ctx.lineTo(tipX, tipY);
     ctx.lineWidth = 12;
     ctx.lineCap = 'round';
