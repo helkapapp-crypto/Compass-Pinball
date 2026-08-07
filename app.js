@@ -21,7 +21,7 @@ const leaderboardModal = document.getElementById('leaderboardModal');
 const leaderboardList = document.getElementById('leaderboardList');
 const leaderboardClose = document.getElementById('leaderboardClose');
 
-const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/crafthub.events/s/AKfycbwsL_UiAck_dnGvf0Tw_r5XczAJVqS7KqGWykPypifdIHg9Hf1gYbobZvu-07hgu5iC/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsL_UiAck_dnGvf0Tw_r5XczAJVqS7KqGWykPypifdIHg9Hf1gYbobZvu-07hgu5iC/exec';
 const REGISTER_URL = APPS_SCRIPT_URL;
 const LEADERBOARD_URL = APPS_SCRIPT_URL;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
