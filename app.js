@@ -1,3 +1,25 @@
+// Small screens / touch-primary devices don't get a usable flipper layout —
+// show a "desktop only" popup before the name/email entry ever appears,
+// instead of the canvas and controls. Leaderboard logic is untouched.
+(function gateGameForDesktop() {
+  const narrowViewport = window.innerWidth < 768;
+  const touchPrimary = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (!narrowViewport && !touchPrimary) return;
+
+  const gameArea = document.getElementById('gameArea');
+  const entryModal = document.getElementById('entryModal');
+  const mobileModal = document.getElementById('mobileModal');
+  if (gameArea) gameArea.hidden = true;
+  if (entryModal) {
+    entryModal.classList.remove('show');
+    entryModal.setAttribute('aria-hidden', 'true');
+  }
+  if (mobileModal) {
+    mobileModal.classList.add('show');
+    mobileModal.setAttribute('aria-hidden', 'false');
+  }
+})();
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');

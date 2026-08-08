@@ -70,18 +70,20 @@
         <h1>Compass AI &amp; Tech Summit</h1>
         <p class="subtitle">Tilt responsibly. Discount irresponsibly.</p>
       </header>
-      <canvas id="game" width="380" height="600"></canvas>
-      <div class="hud">
-        <span>Score: <strong id="score">0</strong></span>
-        <span>Best: <strong id="bestScore">0</strong></span>
-        <span>Balls: <strong id="ballsLeft">3</strong></span>
-      </div>
-      <div class="status">
-        <span id="gameStateLabel">Ready to launch</span>
-      </div>
-      <div class="hint">Use ← → or A / D to flip</div>
-      <div class="controls">
-        <button id="launchBtn" class="launch-btn" type="button">Launch</button>
+      <div id="gameArea">
+        <canvas id="game" width="380" height="600"></canvas>
+        <div class="hud">
+          <span>Score: <strong id="score">0</strong></span>
+          <span>Best: <strong id="bestScore">0</strong></span>
+          <span>Balls: <strong id="ballsLeft">3</strong></span>
+        </div>
+        <div class="status">
+          <span id="gameStateLabel">Ready to launch</span>
+        </div>
+        <div class="hint">Use ← → or A / D to flip</div>
+        <div class="controls">
+          <button id="launchBtn" class="launch-btn" type="button">Launch</button>
+        </div>
       </div>
     </div>
 
@@ -108,6 +110,13 @@
       <h2>Game Over</h2>
       <p id="gameOverText">You lost all 3 balls. Final score: 0</p>
       <button id="gameOverClose" type="button">Play again</button>
+    </div>
+  </div>
+
+  <div id="mobileModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h2>Desktop only</h2>
+      <p>This game works best on a desktop browser - open this page on your computer to play and unlock a discount!:)</p>
     </div>
   </div>
 
