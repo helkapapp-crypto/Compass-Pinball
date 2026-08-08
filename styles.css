@@ -265,7 +265,7 @@ canvas {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 24px;
 }
 
 .launch-btn {
@@ -331,6 +331,7 @@ canvas {
   border: 0;
   border-radius: 999px;
   padding: 10px 16px;
+  margin-top: 10px;
   background: linear-gradient(90deg, #00f5ff 0%, #7c5cff 100%);
   color: #080314;
   font-weight: 700;

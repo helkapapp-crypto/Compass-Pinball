@@ -43,6 +43,40 @@ const TAPER_END_Y = FIELD_BOTTOM;
 const TAPER_LEFT_X = FIELD_CENTER - 104;
 const TAPER_RIGHT_X = FIELD_CENTER + 104;
 
+// Ceiling that follows the drawn horseshoe arch instead of a flat line, so
+// the ball can't fly past the visible rail through the dips at either side.
+function quadPoint(p0, p1, p2, t) {
+  const mt = 1 - t;
+  return {
+    x: mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x,
+    y: mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y
+  };
+}
+const ARCH_CURVE_SEGMENTS = [
+  [{ x: 32, y: 150 }, { x: 60, y: 95 }, { x: 110, y: 110 }],
+  [{ x: 110, y: 110 }, { x: FIELD_CENTER, y: 120 }, { x: 230, y: 110 }],
+  [{ x: 230, y: 110 }, { x: 280, y: 95 }, { x: 308, y: 150 }]
+];
+const ARCH_POINTS = ARCH_CURVE_SEGMENTS.flatMap(([p0, p1, p2]) => {
+  const pts = [];
+  for (let i = 0; i <= 20; i += 1) {
+    pts.push(quadPoint(p0, p1, p2, i / 20));
+  }
+  return pts;
+});
+function archCeilingY(x) {
+  const clampedX = Math.min(Math.max(x, ARCH_POINTS[0].x), ARCH_POINTS[ARCH_POINTS.length - 1].x);
+  for (let i = 1; i < ARCH_POINTS.length; i += 1) {
+    if (clampedX <= ARCH_POINTS[i].x) {
+      const a = ARCH_POINTS[i - 1];
+      const b = ARCH_POINTS[i];
+      const t = (clampedX - a.x) / (b.x - a.x || 1);
+      return a.y + (b.y - a.y) * t;
+    }
+  }
+  return ARCH_POINTS[ARCH_POINTS.length - 1].y;
+}
+
 // Below the flippers there is no floor — missing them (down the middle or
 // either outlane) drains the ball instead of bouncing it back into play.
 // Set past the flippers' resting droop + hit radius so an idle flipper still
@@ -55,11 +89,10 @@ const DRAIN_Y = 560;
 const LANE_LEFT = FIELD_RIGHT + 16; // flush with the outer playfield border
 const LANE_RIGHT = LANE_LEFT + 30;
 const LANE_CENTER = (LANE_LEFT + LANE_RIGHT) / 2;
-const LANE_TOP = FIELD_TOP;
 const LANE_REST_Y = FIELD_BOTTOM - 20;
 const LANE_PULL_MAX = 22;
 const LANE_ANCHOR_Y = LANE_REST_Y + LANE_PULL_MAX + 40;
-const LANE_MERGE_HEIGHT = 60; // height of the rounded curve that merges the lane into the field
+const LANE_MERGE_HEIGHT = 170; // height of the rounded curve that merges the lane into the field
 
 // 2-over-3 bumper pentagon, matching the Compass blueprint layout — spread
 // wider than a tight cluster, but kept clear of the top arch rail (y=140)
@@ -398,14 +431,6 @@ function collideWithFlipper(flipper) {
       ball.vx += nx * normalImpulse + tangentX * tangentialImpulse;
       ball.vy += ny * normalImpulse + tangentY * tangentialImpulse;
       applyCollisionDamping(0.995);
-
-      window.__lastFlipperLog = {
-        kickStrength,
-        normalSpeed,
-        tangentialImpulse,
-        finalVelocity: { vx: ball.vx, vy: ball.vy }
-      };
-      console.log('[flipper kick]', window.__lastFlipperLog);
     }
   } else {
     flipper.contacting = false;
@@ -468,18 +493,27 @@ function updateBall(dt) {
     ball.y += ball.vy * step;
 
     if (ball.inLane) {
-      const mergeStart = LANE_TOP + LANE_MERGE_HEIGHT;
+      // The scripted curve must end exactly where the main field's own
+      // ceiling (archCeilingY) says the playfield is open — otherwise the
+      // ball "exits" above the real boundary and the very next substep's
+      // ceiling collision yanks it back down, reading as a sudden corner.
+      const mergeX = FIELD_RIGHT + 10 - ball.r;
+      const mergeExitY = archCeilingY(mergeX) + ball.r;
+      const mergeStart = mergeExitY + LANE_MERGE_HEIGHT;
 
       if (ball.y <= mergeStart) {
-        // Rounded merge into the main field: ease the ball off the lane
-        // and onto the playfield instead of snapping its position.
+        // Rounded merge into the main field: ease the ball off the lane and
+        // onto the playfield. vx is derived from the curve's own motion each
+        // substep (not injected as a fixed kick), so there's no snap when
+        // physics takes back over — an ease-in curve (zero slope at the
+        // lane, full slope at the exit) keeps that handoff seamless too.
+        const prevMergeX = ball.x;
         const t = Math.min(1, (mergeStart - ball.y) / LANE_MERGE_HEIGHT);
-        const eased = t * t * (3 - 2 * t);
-        const mergeX = FIELD_RIGHT + 10 - ball.r;
+        const eased = t * t;
         ball.x = LANE_CENTER + (mergeX - LANE_CENTER) * eased;
-        if (ball.y <= LANE_TOP) {
+        ball.vx = (ball.x - prevMergeX) / step;
+        if (ball.y <= mergeExitY) {
           ball.inLane = false;
-          ball.vx = -70;
         }
       } else {
         const laneLeft = LANE_LEFT + ball.r;
@@ -518,7 +552,7 @@ function updateBall(dt) {
       left += leftTaperDx * taperT;
       right += rightTaperDx * taperT;
     }
-    const top = FIELD_TOP + ball.r;
+    const top = archCeilingY(ball.x) + ball.r;
 
     bumpers.forEach((bumper) => {
       const dx = ball.x - bumper.x;
@@ -604,8 +638,9 @@ function drawSlot(x, y, w, h) {
 
 function drawPlungerLane() {
   const plungerY = ball.launched ? LANE_REST_Y : ball.y;
-  const mergeStart = LANE_TOP + LANE_MERGE_HEIGHT;
   const mergeX = FIELD_RIGHT + 10 - ball.r;
+  const mergeExitY = archCeilingY(mergeX) + ball.r;
+  const mergeStart = mergeExitY + LANE_MERGE_HEIGHT;
 
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.03)';
@@ -614,17 +649,20 @@ function drawPlungerLane() {
   ctx.strokeStyle = 'rgba(0,245,255,0.35)';
   ctx.lineWidth = 3;
 
-  // Outer wall: straight down the full lane
+  // Outer wall: straight down the full lane, opening at the same height as
+  // the inner wall's curve so the tube doesn't look lopsided at the top.
   ctx.beginPath();
-  ctx.moveTo(LANE_RIGHT, LANE_TOP);
+  ctx.moveTo(LANE_RIGHT, mergeExitY);
   ctx.lineTo(LANE_RIGHT, LANE_ANCHOR_Y);
   ctx.stroke();
 
-  // Inner wall: straight, then a rounded curve merging into the playfield
+  // Inner wall: straight, then a rounded curve merging into the playfield —
+  // ends exactly at the field's own ceiling (mergeExitY), matching the ball's
+  // actual physics path so the drawn rail and the real boundary agree.
   ctx.beginPath();
   ctx.moveTo(LANE_LEFT, LANE_ANCHOR_Y);
   ctx.lineTo(LANE_LEFT, mergeStart);
-  ctx.quadraticCurveTo(LANE_LEFT, LANE_TOP, mergeX, LANE_TOP);
+  ctx.quadraticCurveTo(LANE_LEFT, mergeExitY, mergeX, mergeExitY);
   ctx.stroke();
 
   // Spring coil + plunger head — only while the ball is actually resting on
@@ -814,11 +852,6 @@ function animate(now) {
   if (!lastTime) {
     lastTime = now;
   }
-  window.__pinballDebug = {
-    ballX: ball.x,
-    ballY: ball.y,
-    minY: window.__pinballDebug?.minY === undefined ? ball.y : Math.min(window.__pinballDebug.minY, ball.y)
-  };
   const dt = Math.min((now - lastTime) / 1000, 0.03);
   lastTime = now;
   if (!state.paused) {
