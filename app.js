@@ -135,6 +135,10 @@ const wallRestitution = 0.62;
 const bumperRestitution = 0.64;
 const flipperRestitution = 0.66;
 const collisionDamping = 0.965;
+// Guaranteed minimum bumper escape speed — comfortably above what gravity
+// can rebuild during one cooldown window (320 * 0.2s = 64), so the ball
+// can't settle into a stuck equilibrium right at the rim.
+const MIN_BUMPER_KICK = 110;
 
 // How far each flipper's rod extends backward past its pivot, toward the
 // outer wall — closes the pocket where the ball used to wedge and get stuck.
@@ -158,11 +162,15 @@ const launchState = {
   minCharge: 0.65
 };
 
+// Catches the ball hovering/oscillating in a small area (e.g. pinned next
+// to a bumper) as well as being fully frozen — anchored to where it was
+// last seen making real progress, not just the previous frame's position.
 const stuckWatch = {
   timer: 0,
-  lastX: 0,
-  lastY: 0,
-  threshold: 1.4
+  anchorX: 0,
+  anchorY: 0,
+  threshold: 1,
+  escapeRadius: 20
 };
 
 let lastTime = 0;
@@ -446,6 +454,9 @@ function resetBall() {
   ball.inLane = true;
   launchState.charging = false;
   launchState.charge = 0;
+  stuckWatch.anchorX = ball.x;
+  stuckWatch.anchorY = ball.y;
+  stuckWatch.timer = 0;
   setLaunchButtonLabel();
   updateHud();
 }
@@ -485,8 +496,6 @@ function updateBall(dt) {
   }
 
   const step = dt / physics.substeps;
-  const prevX = ball.x;
-  const prevY = ball.y;
   for (let i = 0; i < physics.substeps; i += 1) {
     ball.vy += physics.gravity * step;
     ball.x += ball.vx * step;
@@ -560,17 +569,33 @@ function updateBall(dt) {
       const dist = Math.hypot(dx, dy);
       const hitDistance = ball.r + bumper.r;
 
-      if (dist < hitDistance && bumper.cooldown <= 0) {
+      if (dist < hitDistance) {
+        // Always push the ball back out so it can never sit inside/pass
+        // through a bumper — only the score-and-kick part is cooldown-gated,
+        // to stop a lingering graze from re-triggering every substep.
         const nx = dx / Math.max(dist, 0.0001);
         const ny = dy / Math.max(dist, 0.0001);
         const overlap = hitDistance - dist;
         ball.x += nx * overlap;
         ball.y += ny * overlap;
-        ball.vx += nx * 70 * bumperRestitution;
-        ball.vy += ny * 70 * bumperRestitution;
-        applyCollisionDamping();
-        bumper.cooldown = bumper.cooldownTime;
-        addScore(50);
+        if (bumper.cooldown <= 0) {
+          // Cancel any velocity heading back into the bumper first (gravity
+          // can build this up while the ball was pinned against it during
+          // the previous cooldown), then guarantee a real escape speed —
+          // otherwise a slow/near-stationary hit barely moves the ball and
+          // it can settle into a stuck equilibrium right next to the rim.
+          const vDotN = ball.vx * nx + ball.vy * ny;
+          if (vDotN < 0) {
+            ball.vx -= vDotN * nx;
+            ball.vy -= vDotN * ny;
+          }
+          const kickSpeed = Math.max(70 * bumperRestitution, MIN_BUMPER_KICK);
+          ball.vx += nx * kickSpeed;
+          ball.vy += ny * kickSpeed;
+          applyCollisionDamping();
+          bumper.cooldown = bumper.cooldownTime;
+          addScore(50);
+        }
       }
     });
 
@@ -604,11 +629,13 @@ function updateBall(dt) {
     }
   }
 
-  const moved = Math.hypot(ball.x - prevX, ball.y - prevY);
-  if (moved < 0.04) {
-    stuckWatch.timer += dt;
-  } else {
+  const distFromAnchor = Math.hypot(ball.x - stuckWatch.anchorX, ball.y - stuckWatch.anchorY);
+  if (distFromAnchor > stuckWatch.escapeRadius) {
+    stuckWatch.anchorX = ball.x;
+    stuckWatch.anchorY = ball.y;
     stuckWatch.timer = 0;
+  } else {
+    stuckWatch.timer += dt;
   }
 
   if (stuckWatch.timer >= stuckWatch.threshold) {
