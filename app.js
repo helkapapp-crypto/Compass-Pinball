@@ -616,7 +616,7 @@ function updateBall(dt) {
           ball.vy += ny * kickSpeed;
           applyCollisionDamping();
           bumper.cooldown = bumper.cooldownTime;
-          addScore(50);
+          addScore(25);
         }
       }
     });
