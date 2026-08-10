@@ -27,9 +27,7 @@ const bestScoreEl = document.getElementById('bestScore');
 const ballsLeftEl = document.getElementById('ballsLeft');
 const gameStateLabel = document.getElementById('gameStateLabel');
 const launchBtn = document.getElementById('launchBtn');
-const milestoneModal = document.getElementById('milestoneModal');
-const milestoneText = document.getElementById('milestoneText');
-const milestoneClose = document.getElementById('milestoneClose');
+const milestoneToast = document.getElementById('milestoneToast');
 const gameOverModal = document.getElementById('gameOverModal');
 const gameOverText = document.getElementById('gameOverText');
 const gameOverClose = document.getElementById('gameOverClose');
@@ -48,6 +46,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let currentUsername = '';
 let currentEmail = '';
 let gameOverEmailSent = false;
+let milestoneToastTimer = null;
 
 // Playfield layout: a horseshoe arch (like the reference blueprint).
 // FIELD_CENTER is the x-axis the flippers/bumpers mirror around.
@@ -265,16 +264,20 @@ function showMilestone(score) {
   if (!nextMilestone) return;
 if (state.milestoneIndex > milestones.indexOf(nextMilestone)) return;
   state.milestoneIndex = milestones.indexOf(nextMilestone) + 1;
-  milestoneText.textContent = `Congratulations! You reached ${score} points! Your prize: ${nextMilestone.percent}% discount coupon: ${nextMilestone.code}`;
-  milestoneModal.classList.add('show');
-  milestoneModal.setAttribute('aria-hidden', 'false');
-  state.paused = true;
+  showMilestoneToast(nextMilestone);
 }
 
-function closeMilestoneModal() {
-  milestoneModal.classList.remove('show');
-  milestoneModal.setAttribute('aria-hidden', 'true');
-  state.paused = false;
+function showMilestoneToast(milestone) {
+  milestoneToast.textContent = `🎉 ${milestone.percent}% unlocked!`;
+  milestoneToast.classList.remove('show');
+  void milestoneToast.offsetWidth;
+  milestoneToast.classList.add('show');
+  milestoneToast.setAttribute('aria-hidden', 'false');
+  clearTimeout(milestoneToastTimer);
+  milestoneToastTimer = setTimeout(() => {
+    milestoneToast.classList.remove('show');
+    milestoneToast.setAttribute('aria-hidden', 'true');
+  }, 2000);
 }
 
 function showGameOverModal() {
@@ -925,16 +928,6 @@ launchBtn.addEventListener('pointerdown', (event) => {
   beginLaunch();
 });
 
-milestoneClose.addEventListener('click', () => {
-  closeMilestoneModal();
-});
-
-milestoneModal.addEventListener('click', (event) => {
-  if (event.target === milestoneModal) {
-    closeMilestoneModal();
-  }
-});
-
 gameOverClose.addEventListener('click', () => {
   closeGameOverModal();
 });
@@ -984,11 +977,6 @@ window.addEventListener('pointerup', () => {
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
-    if (milestoneModal.classList.contains('show')) {
-      event.preventDefault();
-      milestoneClose.click();
-      return;
-    }
     if (gameOverModal.classList.contains('show')) {
       event.preventDefault();
       gameOverClose.click();
