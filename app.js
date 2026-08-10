@@ -147,14 +147,14 @@ const ball = {
 };
 
 const physics = {
-  gravity: 320,
+  gravity: 352,
   substeps: 12
 };
 
 // Collision response tuning: keep the ball bouncy without letting it gain energy.
 const wallRestitution = 0.62;
 const bumperRestitution = 0.64;
-const flipperRestitution = 0.66;
+const flipperRestitution = 0.72;
 const collisionDamping = 0.965;
 // Guaranteed minimum bumper escape speed — comfortably above what gravity
 // can rebuild during one cooldown window (320 * 0.2s = 64), so the ball
@@ -191,7 +191,8 @@ const stuckWatch = {
   anchorX: 0,
   anchorY: 0,
   threshold: 1,
-  escapeRadius: 20
+  escapeRadius: 20,
+  activeSpeedThreshold: 60
 };
 
 let lastTime = 0;
@@ -456,7 +457,7 @@ function collideWithFlipper(flipper) {
     if (!flipper.contacting && normalSpeed < 0) {
       flipper.contacting = true;
       const normalImpulse = -(1 + flipperRestitution) * normalSpeed;
-      const kickStrength = 260 + Math.abs(flipper.angularVelocity) * 380;
+      const kickStrength = 285 + Math.abs(flipper.angularVelocity) * 415;
       const tangentialImpulse = sign * kickStrength * 0.02;
       const tangentX = -ny;
       const tangentY = nx;
@@ -655,9 +656,15 @@ function updateBall(dt) {
   }
 
   const distFromAnchor = Math.hypot(ball.x - stuckWatch.anchorX, ball.y - stuckWatch.anchorY);
+  const ballSpeed = Math.hypot(ball.vx, ball.vy);
   if (distFromAnchor > stuckWatch.escapeRadius) {
     stuckWatch.anchorX = ball.x;
     stuckWatch.anchorY = ball.y;
+    stuckWatch.timer = 0;
+  } else if (ballSpeed > stuckWatch.activeSpeedThreshold) {
+    // Rattling fast between flippers/bumpers in a tight pocket keeps net
+    // displacement small too, but the ball is clearly still in active play —
+    // only a genuinely slow/settled ball should count toward "stuck".
     stuckWatch.timer = 0;
   } else {
     stuckWatch.timer += dt;
@@ -807,7 +814,23 @@ function drawBoard() {
   });
   ctx.restore();
 
-  bumpers.forEach((bumper) => {
+  const pulseTime = performance.now() / 1000;
+  bumpers.forEach((bumper, index) => {
+    // Idle "breathing" ring — independent of the hit/kick logic in
+    // updateBumpers, purely decorative. Each bumper gets its own phase
+    // offset so the five rings don't pulse in lockstep.
+    const pulsePeriod = 2.3;
+    const pulsePhase = index * 1.3;
+    const pulseNorm = (Math.sin((pulseTime / pulsePeriod) * Math.PI * 2 + pulsePhase) + 1) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(bumper.x, bumper.y, bumper.r + 6 + pulseNorm * 8, 0, Math.PI * 2);
+    ctx.strokeStyle = bumper.color;
+    ctx.globalAlpha = 0.15 + pulseNorm * 0.25;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
     ctx.save();
     ctx.beginPath();
     ctx.arc(bumper.x, bumper.y, bumper.r, 0, Math.PI * 2);

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_gravity_test2.ps1\")",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_pulse_check.ps1\")",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_stuck_test.ps1\")"
+    ]
+  }
+}
