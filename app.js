@@ -126,6 +126,26 @@ const bumpers = [
   { x: FIELD_CENTER + 62, y: 270, r: 24, color: '#00a75d', label: 'LD', cooldown: 0, cooldownTime: 0.2 }
 ];
 
+// Faint background stars along the side margins — purely decorative, each
+// pulsing on its own period/phase so they drift in and out of sync.
+const STAR_FIELD = [
+  { x: 10, y: 90, r: 1.4, period: 1.7, phase: 0.3 },
+  { x: 20, y: 150, r: 1.1, period: 2.3, phase: 2.1 },
+  { x: 8, y: 210, r: 1.6, period: 1.9, phase: 4.4 },
+  { x: 22, y: 270, r: 1.2, period: 2.1, phase: 1.0 },
+  { x: 12, y: 330, r: 1.5, period: 1.6, phase: 5.2 },
+  { x: 24, y: 390, r: 1.1, period: 2.4, phase: 3.3 },
+  { x: 9, y: 450, r: 1.3, period: 1.8, phase: 0.9 },
+  { x: 18, y: 510, r: 1.6, period: 2.0, phase: 4.0 },
+  { x: 362, y: 100, r: 1.3, period: 2.2, phase: 1.6 },
+  { x: 372, y: 170, r: 1.1, period: 1.6, phase: 3.8 },
+  { x: 358, y: 230, r: 1.7, period: 2.5, phase: 0.5 },
+  { x: 368, y: 300, r: 1.2, period: 1.9, phase: 2.7 },
+  { x: 360, y: 370, r: 1.4, period: 2.1, phase: 5.6 },
+  { x: 374, y: 440, r: 1.1, period: 1.7, phase: 1.3 },
+  { x: 363, y: 500, r: 1.5, period: 2.3, phase: 4.7 }
+];
+
 const state = {
   score: 0,
   bestScore: Number(localStorage.getItem('compassPinballBest') || 0),
@@ -756,11 +776,22 @@ function drawPlungerLane() {
 function drawBoard() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, '#241046');
-  gradient.addColorStop(1, '#080314');
+  const pulseTime = performance.now() / 1000;
+
+  const gradient = ctx.createRadialGradient(FIELD_CENTER, 140, 0, FIELD_CENTER, 140, 520);
+  gradient.addColorStop(0, '#2f1660');
+  gradient.addColorStop(0.45, '#1c0d3c');
+  gradient.addColorStop(1, '#050210');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  STAR_FIELD.forEach((star) => {
+    const norm = (Math.sin((pulseTime / star.period) * Math.PI * 2 + star.phase) + 1) / 2;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.r * (0.7 + norm * 0.6), 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${(0.12 + norm * 0.5).toFixed(2)})`;
+    ctx.fill();
+  });
 
   // Horseshoe rail — a single stroke with a soft glow, instead of three
   // stacked lines running in parallel.
@@ -814,7 +845,6 @@ function drawBoard() {
   });
   ctx.restore();
 
-  const pulseTime = performance.now() / 1000;
   bumpers.forEach((bumper, index) => {
     // Idle "breathing" ring — independent of the hit/kick logic in
     // updateBumpers, purely decorative. Each bumper gets its own phase
