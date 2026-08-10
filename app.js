@@ -851,14 +851,6 @@ function drawBoard() {
   ctx.stroke();
   ctx.restore();
 
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(FIELD_CENTER, 140, 140, Math.PI * 0.08, Math.PI * 0.92);
-  ctx.stroke();
-  ctx.restore();
-
   // Top rollover-lane slots
   ctx.save();
   ctx.fillStyle = 'rgba(0,245,255,0.55)';
