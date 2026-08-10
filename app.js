@@ -162,12 +162,16 @@ const PCB_TRACES = [
 
 const state = {
   score: 0,
-  bestScore: Number(localStorage.getItem('compassPinballBest') || 0),
+  bestScore: 0,
   ballsLeft: 3,
   gameOver: false,
   milestoneIndex: 0,
   paused: true
 };
+
+function bestScoreKey(username) {
+  return `compassPinballBest_${username}`;
+}
 
 const ball = {
   x: LANE_CENTER,
@@ -433,7 +437,9 @@ function loadLeaderboard() {
 function addScore(amount) {
   state.score += amount;
   state.bestScore = Math.max(state.bestScore, state.score);
-  localStorage.setItem('compassPinballBest', String(state.bestScore));
+  if (currentUsername) {
+    localStorage.setItem(bestScoreKey(currentUsername), String(state.bestScore));
+  }
   updateHud();
   const milestoneCandidates = [1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
   const reachedMilestone = milestoneCandidates.find((threshold) => state.score >= threshold && state.score - amount < threshold);
@@ -1033,6 +1039,9 @@ entryStart.addEventListener('click', () => {
   currentEmail = entryEmail.value.trim();
   const email = currentEmail;
   entryStart.disabled = true;
+
+  state.bestScore = Number(localStorage.getItem(bestScoreKey(currentUsername)) || 0);
+  updateHud();
 
   fetch(REGISTER_URL, {
     method: 'POST',
