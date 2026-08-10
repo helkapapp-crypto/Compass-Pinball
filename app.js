@@ -614,10 +614,10 @@ function updateBall(dt) {
       const rightTaperDx = (TAPER_RIGHT_X - ball.r) - right;
       const leftLen = Math.hypot(leftTaperDx, taperDy);
       const rightLen = Math.hypot(rightTaperDx, taperDy);
-      leftNX = taperDy / leftLen;
-      leftNY = -leftTaperDx / leftLen;
-      rightNX = -taperDy / rightLen;
-      rightNY = rightTaperDx / rightLen;
+      leftNX = taperDy / Math.max(leftLen, 0.0001);
+      leftNY = -leftTaperDx / Math.max(leftLen, 0.0001);
+      rightNX = -taperDy / Math.max(rightLen, 0.0001);
+      rightNY = rightTaperDx / Math.max(rightLen, 0.0001);
       left += leftTaperDx * taperT;
       right += rightTaperDx * taperT;
     }
@@ -1072,10 +1072,10 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     beginLaunch();
   }
-  if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
+  if (event.code === 'ArrowLeft' || event.code === 'KeyA' || event.key === 'ArrowLeft' || (event.key || '').toLowerCase() === 'a') {
     controls.left = true;
   }
-  if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
+  if (event.code === 'ArrowRight' || event.code === 'KeyD' || event.key === 'ArrowRight' || (event.key || '').toLowerCase() === 'd') {
     controls.right = true;
   }
 });
@@ -1085,10 +1085,10 @@ window.addEventListener('keyup', (event) => {
     event.preventDefault();
     endLaunch();
   }
-  if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
+  if (event.code === 'ArrowLeft' || event.code === 'KeyA' || event.key === 'ArrowLeft' || (event.key || '').toLowerCase() === 'a') {
     controls.left = false;
   }
-  if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
+  if (event.code === 'ArrowRight' || event.code === 'KeyD' || event.key === 'ArrowRight' || (event.key || '').toLowerCase() === 'd') {
     controls.right = false;
   }
 });
