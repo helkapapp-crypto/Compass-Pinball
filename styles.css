@@ -370,6 +370,14 @@ canvas {
   cursor: pointer;
 }
 
+#shareHint {
+  margin: 36px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .modal-card button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
