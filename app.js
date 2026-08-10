@@ -146,6 +146,20 @@ const STAR_FIELD = [
   { x: 363, y: 500, r: 1.5, period: 2.3, phase: 4.7 }
 ];
 
+// Faint circuit-board traces threaded between/behind the bumper pentagon —
+// purely decorative background texture, right-angle segments with small
+// connector dots at each joint/end. No collision or gameplay involvement.
+const PCB_TRACES = [
+  { color: '124,92,255', points: [[45, 120], [100, 120], [100, 150]] },
+  { color: '0,245,255', points: [[295, 120], [240, 120], [240, 150]] },
+  { color: '124,92,255', points: [[55, 150], [55, 195], [140, 195], [140, 220], [152, 220]] },
+  { color: '0,245,255', points: [[285, 150], [285, 195], [205, 195], [205, 220], [188, 220]] },
+  { color: '124,92,255', points: [[50, 300], [50, 250], [95, 250], [95, 270]] },
+  { color: '0,245,255', points: [[290, 300], [290, 250], [245, 250], [245, 270]] },
+  { color: '124,92,255', points: [[170, 246], [170, 310], [125, 310], [125, 345]] },
+  { color: '0,245,255', points: [[170, 246], [170, 310], [215, 310], [215, 345]] }
+];
+
 const state = {
   score: 0,
   bestScore: Number(localStorage.getItem('compassPinballBest') || 0),
@@ -792,6 +806,27 @@ function drawBoard() {
     ctx.fillStyle = `rgba(255,255,255,${(0.12 + norm * 0.5).toFixed(2)})`;
     ctx.fill();
   });
+
+  ctx.save();
+  const traceBreathe = (Math.sin((pulseTime / 5) * Math.PI * 2) + 1) / 2;
+  PCB_TRACES.forEach((trace) => {
+    ctx.globalAlpha = 0.15 + traceBreathe * 0.08;
+    ctx.strokeStyle = `rgb(${trace.color})`;
+    ctx.fillStyle = `rgb(${trace.color})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    trace.points.forEach(([x, y], i) => {
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    trace.points.forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+  ctx.restore();
 
   // Horseshoe rail — a single stroke with a soft glow, instead of three
   // stacked lines running in parallel.
