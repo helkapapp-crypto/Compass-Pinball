@@ -35,6 +35,8 @@ const entryModal = document.getElementById('entryModal');
 const entryName = document.getElementById('entryName');
 const entryEmail = document.getElementById('entryEmail');
 const entryStart = document.getElementById('entryStart');
+const howToPlayModal = document.getElementById('howToPlayModal');
+const howToPlayStart = document.getElementById('howToPlayStart');
 const leaderboardList = document.getElementById('leaderboardList');
 const discountTiers = document.getElementById('discountTiers');
 
@@ -47,6 +49,7 @@ let currentUsername = '';
 let currentEmail = '';
 let gameOverEmailSent = false;
 let milestoneToastTimer = null;
+let hasSeenInstructions = false;
 
 // Playfield layout: a horseshoe arch (like the reference blueprint).
 // FIELD_CENTER is the x-axis the flippers/bumpers mirror around.
@@ -1065,8 +1068,21 @@ entryStart.addEventListener('click', () => {
 
   entryModal.classList.remove('show');
   entryModal.setAttribute('aria-hidden', 'true');
-  state.paused = false;
   loadLeaderboard();
+
+  if (hasSeenInstructions) {
+    state.paused = false;
+  } else {
+    howToPlayModal.classList.add('show');
+    howToPlayModal.setAttribute('aria-hidden', 'false');
+  }
+});
+
+howToPlayStart.addEventListener('click', () => {
+  howToPlayModal.classList.remove('show');
+  howToPlayModal.setAttribute('aria-hidden', 'true');
+  hasSeenInstructions = true;
+  state.paused = false;
 });
 
 updateDiscountTiers();
@@ -1087,6 +1103,11 @@ window.addEventListener('keydown', (event) => {
     if (entryModal.classList.contains('show')) {
       event.preventDefault();
       entryStart.click();
+      return;
+    }
+    if (howToPlayModal.classList.contains('show')) {
+      event.preventDefault();
+      howToPlayStart.click();
       return;
     }
   }
