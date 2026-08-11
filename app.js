@@ -119,11 +119,11 @@ const LANE_MERGE_HEIGHT = 170; // height of the rounded curve that merges the la
 // wider than a tight cluster, but kept clear of the top arch rail (y=140)
 // above and the slingshots/flippers (y>=428) below.
 const bumpers = [
-  { x: FIELD_CENTER - 62, y: 170, r: 24, color: '#6545CC', label: 'AI', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER + 62, y: 170, r: 24, color: '#ffa414', label: 'PR', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER - 62, y: 270, r: 24, color: '#159dd9', label: 'UX', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER, y: 220, r: 24, color: '#e6007e', label: 'DA', cooldown: 0, cooldownTime: 0.2 },
-  { x: FIELD_CENTER + 62, y: 270, r: 24, color: '#00a75d', label: 'LD', cooldown: 0, cooldownTime: 0.2 }
+  { x: FIELD_CENTER - 62, y: 170, r: 24, color: '#6545CC', label: 'AI', cooldown: 0, cooldownTime: 0.2, flash: 0 },
+  { x: FIELD_CENTER + 62, y: 170, r: 24, color: '#ffa414', label: 'PR', cooldown: 0, cooldownTime: 0.2, flash: 0 },
+  { x: FIELD_CENTER - 62, y: 270, r: 24, color: '#159dd9', label: 'UX', cooldown: 0, cooldownTime: 0.2, flash: 0 },
+  { x: FIELD_CENTER, y: 220, r: 24, color: '#e6007e', label: 'DA', cooldown: 0, cooldownTime: 0.2, flash: 0 },
+  { x: FIELD_CENTER + 62, y: 270, r: 24, color: '#00a75d', label: 'LD', cooldown: 0, cooldownTime: 0.2, flash: 0 }
 ];
 
 // Faint background stars along the side margins — purely decorative, each
@@ -448,9 +448,12 @@ function addScore(amount) {
   }
 }
 
+const BUMPER_FLASH_DURATION = 0.3;
+
 function updateBumpers(dt) {
   bumpers.forEach((bumper) => {
     bumper.cooldown = Math.max(0, bumper.cooldown - dt);
+    bumper.flash = Math.max(0, bumper.flash - dt / BUMPER_FLASH_DURATION);
   });
 }
 
@@ -660,6 +663,7 @@ function updateBall(dt) {
           ball.vy += ny * kickSpeed;
           applyCollisionDamping();
           bumper.cooldown = bumper.cooldownTime;
+          bumper.flash = 1;
           addScore(25);
         }
       }
@@ -885,22 +889,31 @@ function drawBoard() {
     const pulsePeriod = 2.3;
     const pulsePhase = index * 1.3;
     const pulseNorm = (Math.sin((pulseTime / pulsePeriod) * Math.PI * 2 + pulsePhase) + 1) / 2;
+    // Sharp hit-flash, layered on top of the slow idle pulse rather than
+    // replacing it — updateBumpers() decays this back to 0 over ~0.3s.
+    const flash = bumper.flash || 0;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(bumper.x, bumper.y, bumper.r + 6 + pulseNorm * 8, 0, Math.PI * 2);
+    ctx.arc(bumper.x, bumper.y, bumper.r + 6 + pulseNorm * 8 + flash * 6, 0, Math.PI * 2);
     ctx.strokeStyle = bumper.color;
-    ctx.globalAlpha = 0.15 + pulseNorm * 0.25;
-    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.15 + pulseNorm * 0.25 + flash * 0.4;
+    ctx.lineWidth = 2 + flash * 2;
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
     ctx.beginPath();
-    ctx.arc(bumper.x, bumper.y, bumper.r, 0, Math.PI * 2);
+    ctx.arc(bumper.x, bumper.y, bumper.r + flash * 4, 0, Math.PI * 2);
     ctx.fillStyle = bumper.color;
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 18 + flash * 20;
     ctx.shadowColor = bumper.color;
     ctx.fill();
+    if (flash > 0) {
+      ctx.globalAlpha = flash * 0.85;
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     ctx.shadowBlur = 0;
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(255,255,255,0.75)';

@@ -12,7 +12,8 @@
       "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_syntax_check.ps1\")",
       "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_key_fix_check2.ps1\")",
       "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_beststore_check.ps1\")",
-      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_font_check.ps1\")"
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_font_check.ps1\")",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\Helka\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Work-pinball\\\\dd8a5b19-a539-4f1e-b8b8-ae9168503a34\\\\scratchpad\\\\cdp_flash_check.ps1\")"
     ]
   }
 }
