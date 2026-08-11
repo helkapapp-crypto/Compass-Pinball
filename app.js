@@ -906,7 +906,7 @@ function drawBoard() {
     ctx.strokeStyle = 'rgba(255,255,255,0.75)';
     ctx.stroke();
     ctx.fillStyle = '#fefefe';
-    ctx.font = 'bold 15px Segoe UI';
+    ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(bumper.label, bumper.x, bumper.y);
