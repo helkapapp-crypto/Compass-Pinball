@@ -292,11 +292,12 @@ function updateDiscountTiers() {
 
 function showMilestone(score) {
   const milestones = [
-    { threshold: 2000, percent: 10, code: 'PINBALL10' },
-    { threshold: 3000, percent: 15, code: 'PINBALL15' },
-    { threshold: 4000, percent: 20, code: 'PINBALL20' },
-    { threshold: 6000, percent: 25, code: 'PINBALL25' },
-    { threshold: 8000, percent: 30, code: 'PINBALL30' }
+    { threshold: 2000, percent: 10, code: 'CTASFLYCODE' },
+    { threshold: 3000, percent: 15, code: 'CTASHFLIP9K' },
+    { threshold: 4000, percent: 20, code: 'CTASBUMPR3X' },
+    { threshold: 6000, percent: 25, code: 'CTASTILT7Q' },
+    { threshold: 8000, percent: 30, code: 'CTASNUDGE5W' },
+    { threshold: 12000, percent: 40, code: 'CTASGRANDPZ' }
   ];
 
   const nextMilestone = milestones.find((item) => item.threshold === score);
@@ -307,7 +308,7 @@ if (state.milestoneIndex > milestones.indexOf(nextMilestone)) return;
 }
 
 function showMilestoneToast(milestone) {
-  milestoneToast.textContent = `🎉 ${milestone.percent}% unlocked!`;
+  milestoneToast.textContent = `🎉 ${milestone.percent}% unlocked! Code: ${milestone.code}`;
   milestoneToast.classList.remove('show');
   void milestoneToast.offsetWidth;
   milestoneToast.classList.add('show');
@@ -441,7 +442,7 @@ function addScore(amount) {
     localStorage.setItem(bestScoreKey(currentUsername), String(state.bestScore));
   }
   updateHud();
-  const milestoneCandidates = [2000, 3000, 4000, 6000, 8000];
+  const milestoneCandidates = [2000, 3000, 4000, 6000, 8000, 12000];
   const reachedMilestone = milestoneCandidates.find((threshold) => state.score >= threshold && state.score - amount < threshold);
   if (reachedMilestone) {
     showMilestone(reachedMilestone);
