@@ -203,6 +203,7 @@ h1 {
   text-transform: uppercase;
   color: #f8f3ff;
   text-shadow: 0 0 16px rgba(0,245,255,0.3);
+  white-space: nowrap;
 }
 
 .subtitle {
