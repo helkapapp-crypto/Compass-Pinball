@@ -292,14 +292,11 @@ function updateDiscountTiers() {
 
 function showMilestone(score) {
   const milestones = [
-    { threshold: 1500, percent: 15, code: 'PINBALL15' },
-    { threshold: 2000, percent: 20, code: 'PINBALL20' },
-    { threshold: 2500, percent: 25, code: 'PINBALL25' },
-    { threshold: 3000, percent: 30, code: 'PINBALL30' },
-    { threshold: 3500, percent: 35, code: 'PINBALL35' },
-    { threshold: 4000, percent: 40, code: 'PINBALL40' },
-    { threshold: 4500, percent: 45, code: 'PINBALL45' },
-    { threshold: 5000, percent: 50, code: 'PINBALL50' }
+    { threshold: 2000, percent: 10, code: 'PINBALL10' },
+    { threshold: 3000, percent: 15, code: 'PINBALL15' },
+    { threshold: 4000, percent: 20, code: 'PINBALL20' },
+    { threshold: 6000, percent: 25, code: 'PINBALL25' },
+    { threshold: 8000, percent: 30, code: 'PINBALL30' }
   ];
 
   const nextMilestone = milestones.find((item) => item.threshold === score);
@@ -444,7 +441,7 @@ function addScore(amount) {
     localStorage.setItem(bestScoreKey(currentUsername), String(state.bestScore));
   }
   updateHud();
-  const milestoneCandidates = [1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
+  const milestoneCandidates = [2000, 3000, 4000, 6000, 8000];
   const reachedMilestone = milestoneCandidates.find((threshold) => state.score >= threshold && state.score - amount < threshold);
   if (reachedMilestone) {
     showMilestone(reachedMilestone);
